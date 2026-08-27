@@ -121,4 +121,18 @@ if [ -d /app/.pi-web/skills-seed ]; then
   done
 fi
 
+# GitHub App credential (M-134, replaces the raw chris_github_key SSH
+# mount) — same mechanism as dsh-deploy/oh-my-pi-deploy's entrypoints: a
+# git credential.helper mints a fresh installation token per operation,
+# and an insteadOf rule rewrites SSH-style GitHub URLs to HTTPS first
+# (the helper only ever applies to HTTPS remotes). No gh CLI in this
+# image at all, so no gh-auth background refresh loop — nothing to
+# authenticate. pi-web-factory (modules/worktree.ts etc.) is the actual
+# git-operations consumer here, not pi-web itself.
+if [ -n "$GITHUB_APP_ID" ]; then
+  git config --global credential.helper "/app/credential-helper/github-app-git-credential-helper.mjs"
+  git config --global url."https://github.com/".insteadOf "git@github.com:"
+  git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+fi
+
 exec "$@"

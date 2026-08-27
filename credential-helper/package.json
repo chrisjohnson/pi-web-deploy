@@ -1,0 +1,8 @@
+{
+  "name": "pi-web-deploy-credential-helper",
+  "private": true,
+  "description": "GitHub App credential helper for pi-web-deploy (M-134) - same mechanism as dsh-deploy/oh-my-pi-deploy, its own small dependency tree since pi-web-factory's own package.json is a separate, unrelated dependency set (yaml, zod).",
+  "dependencies": {
+    "@octokit/auth-app": "^7.1.5"
+  }
+}
