@@ -131,8 +131,16 @@ fi
 # git-operations consumer here, not pi-web itself.
 if [ -n "$GITHUB_APP_ID" ]; then
   git config --global credential.helper "/app/credential-helper/github-app-git-credential-helper.mjs"
+  # url.<base>.insteadOf is multi-valued in git, but plain `git config
+  # <key> <value>` (no --add) REPLACES rather than appends when the key
+  # already has a value — confirmed live during M-134 validation: the
+  # second call below was silently overwriting the first, so only
+  # ssh://git@github.com/ remotes got rewritten and plain SCP-style
+  # git@github.com:owner/repo remotes (the more common clone form) fell
+  # through with no credential at all, since the SSH key mount this
+  # replaced is gone. --add on the second call fixes it.
   git config --global url."https://github.com/".insteadOf "git@github.com:"
-  git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+  git config --global --add url."https://github.com/".insteadOf "ssh://git@github.com/"
 fi
 
 exec "$@"
