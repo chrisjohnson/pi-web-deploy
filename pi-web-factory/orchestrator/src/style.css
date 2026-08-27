@@ -1,0 +1,819 @@
+/**
+ * style.css: pi-web-factory visualizer theme.
+ *
+ * Matches pi-web's own real shipped theme system (extracted directly from
+ * its bundle, not guessed) — "PI WEB Light" and "PI WEB Dark", switched via
+ * `prefers-color-scheme` exactly like pi-web's own "Auto" mode (no manual
+ * toggle here; this app follows the OS/browser setting, same as pi-web).
+ *
+ * ── M-105 Phase A: Role colors moved to JS (palette.ts/roleColor.ts) ──────
+ * Pre-M-105, per-Role colors lived here as hand-authored `--role-*` custom
+ * properties (one pair per role, per theme) — every new Role/Step kind
+ * meant hand-picking 4 new hex values, twice. That whole table is GONE now:
+ * `roleColor.ts` computes a Role's full mini-palette (text/border/surface/
+ * surfaceLight/surfaceDark/solid/onSolid) directly in JS via `palette.ts`'s
+ * deterministic hue-generation formula, theme-aware via `matchMedia`, and
+ * emits real `hsl(...)` values as inline styles — see those two modules'
+ * own doc comments for the full reasoning (Radix Colors' published palette-
+ * theory research) and why this scales to any future Role/Step name with
+ * zero CSS authoring ever required again.
+ *
+ * The three STATUS colors below (`--pi-success`/`--pi-warning`/
+ * `--pi-danger`) remain real CSS custom properties — a small, FIXED set of
+ * exactly three meanings, deliberately kept SEPARATE from Role identity:
+ * status colors are reserved for run/Step status (success/running/fail),
+ * Role colors identify WHICH agent role (plan/build/review/scout/document/
+ * run-tests/...) produced a Step. Mixing the two would make a "this step
+ * failed" signal and a "this step was run by review" signal
+ * indistinguishable at a glance.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ── PI WEB Light (default / prefers-color-scheme: light) ──────────────── */
+  --pi-bg: #f7f1e6;
+  --pi-surface: #fff9ee;
+  --pi-surface-hover: #f0e6d6;
+  --pi-border: #c9bca8;
+  --pi-border-muted: #d8cdbc;
+  --pi-text: #15131b;
+  --pi-text-secondary: #15131b;
+  --pi-text-bright: #15131b;
+  --pi-muted: #5f586a;
+  --pi-dim: #766f7e;
+  --pi-accent: #6430d8;
+  --pi-accent-border: #6430d8;
+  --pi-selection-bg: #eadff8;
+  /* M-105 item 1: re-researched success/fail pair (Radix Colors' own
+     documented semantic pairing — "Success: green, teal, jade, grass,
+     mint" / "Error: red, ruby, tomato, crimson", radix-ui.com/colors —
+     fetched live during this ticket, see palette.ts's doc comment for the
+     full citation). Landed on a JADE-leaning green (cooler/softer than the
+     prior pure-green #008c58, sits better against this app's warm sand
+     background) and a RUBY-leaning red (warmer/less alarm-siren than the
+     prior #b51d23 — Chris: "I'm not attached to red or green here, I just
+     want to visually highlight failure" — still unmistakably "this
+     failed," just less jarring next to sand/tan).
+
+     M-105 item 1 reopened: the ruby/crimson danger red above still read as
+     PINK to Chris — hsl(346, 64%, 46%) sits in the magenta family, not the
+     red/orange one. Re-hued to a true SALMON (hsl(9, 68%, 52%) — compare
+     to the canonical salmon #fa8072's own hsl(6, 93%, 71%): same hue
+     neighborhood, tuned for this app's own saturation/lightness scale) —
+     a real hue shift (346deg -> 9deg), not just a lightness/saturation
+     tweak, per Chris's explicit ask. */
+  --pi-success: #1a8a5e;
+  --pi-success-border: #1a8a5e;
+  --pi-success-bg: #e3f3ea;
+  --pi-success-surface: #d9eee2;
+  --pi-warning: #b05f00;
+  --pi-warning-border: #b05f00;
+  --pi-warning-surface: #fff2d2;
+  --pi-danger: #d84a31;
+  --pi-danger-border: #bf3922;
+  /* -surface needs its own hue/lightness/saturation tuning, not just the
+     same hue as -border/-danger carried at higher lightness — near-white
+     tints (L~95%) make ANY red-family hue read as generic pale pink
+     regardless of angle; had to pull lightness down and saturation up
+     enough for the salmon hue to actually be perceptible here. */
+  --pi-danger-surface: #f4d2cd;
+  --pi-purple: #6430d8;
+  --pi-purple-border: #6430d8;
+  --pi-purple-surface: #eadff8;
+  --pi-shadow-soft: #15131b22;
+  --pi-shadow: #15131b33;
+
+  /* fonts — matches pi-web's own --pi-control-font-family / --pi-control-monospace-font-family exactly */
+  --pi-font: system-ui, sans-serif;
+  --pi-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    /* ── PI WEB Dark ───────────────────────────────────────────────────── */
+    --pi-bg: #070912;
+    --pi-surface: #101527;
+    --pi-surface-hover: #151b31;
+    --pi-border: #26304f;
+    --pi-border-muted: #26304f;
+    --pi-text: #f7f4ff;
+    --pi-text-secondary: #aaa4bd;
+    --pi-text-bright: #ffffff;
+    --pi-muted: #aaa4bd;
+    --pi-dim: #817a99;
+    --pi-accent: #7c3cff;
+    --pi-accent-border: #5a47b0;
+    --pi-selection-bg: #1d2547;
+    /* M-105 item 1: same jade/ruby re-research as the light theme above,
+       re-tuned for dark-theme contrast (lighter/more saturated, matching
+       this app's existing dark-theme convention of light pastel accents on
+       a near-black background).
+
+       M-105 item 1 reopened: same salmon re-hue as the light theme's
+       --pi-danger above (hue ~9deg, not the old ~347deg ruby/pink) — kept
+       at this theme's existing light/high-saturation pastel-on-dark
+       treatment. */
+    --pi-success: #3ee0a0;
+    --pi-success-border: #3ee0a0;
+    --pi-success-bg: #071e19;
+    --pi-success-surface: #0c2b22;
+    --pi-warning: #ffb000;
+    --pi-warning-border: #ffb000;
+    --pi-warning-surface: #16140d;
+    --pi-danger: #ff8670;
+    --pi-danger-border: #f56147;
+    --pi-danger-surface: #3b1811;
+    --pi-purple: #b7a2ff;
+    --pi-purple-border: #7c3cff;
+    --pi-purple-surface: #181026;
+    --pi-shadow-soft: #0006;
+    --pi-shadow: #0008;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--pi-font);
+  background: var(--pi-bg);
+  color: var(--pi-text);
+}
+
+#app {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+}
+
+header.top-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+header.top-bar h1 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+header.top-bar .subtitle {
+  color: var(--pi-dim);
+  font-size: 12.5px;
+}
+
+a.back-link {
+  color: var(--pi-accent);
+  text-decoration: none;
+  font-size: 13px;
+}
+a.back-link:hover {
+  text-decoration: underline;
+}
+
+/* ── list/grid view ───────────────────────────────────────────────────── */
+
+.run-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 12.5px;
+  color: var(--pi-dim);
+}
+
+.project-filter-select {
+  background: var(--pi-surface);
+  color: var(--pi-text);
+  border: 1px solid var(--pi-border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12.5px;
+  max-width: 360px;
+  font-family: var(--pi-font);
+}
+.project-filter-select:hover {
+  border-color: var(--pi-accent);
+}
+
+/* Responsive grid of condensed run cards (SSSF-style) — the main structural
+   change from the old vertical list. `auto-fill` + `minmax` lets the grid
+   naturally reflow from 1 column (narrow viewport) up to N columns on a wide
+   monitor, no JS-driven breakpoints needed. */
+.run-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+}
+
+.run-card {
+  display: block;
+  background: var(--pi-surface);
+  border: 1px solid var(--pi-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px var(--pi-shadow-soft);
+}
+.run-card:hover {
+  border-color: var(--pi-accent);
+  background: var(--pi-surface-hover);
+}
+
+/* Status-driven card treatment (spec §5). Running: full brightness + pulsing
+   glow (the "this is live right now" signal — CSS `@keyframes` on
+   `box-shadow`/`opacity`, GPU-cheap, never JS-driven per-frame). Success/
+   fail: tinted toward their status color, then covered with a dark scrim
+   (`::after`) to read clearly as "done, not active" — no pulse. Hover lifts
+   the scrim back to full visibility. */
+.run-card.run-card-running {
+  border-color: var(--pi-accent-border);
+  animation: card-pulse-glow 2s ease-in-out infinite alternate;
+}
+
+.run-card.run-card-success,
+.run-card.run-card-fail {
+  position: relative;
+}
+.run-card.run-card-success::after,
+.run-card.run-card-fail::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  /* M-105 item 15: halved from 0.32 (~32% opacity) per Chris's ask ("don't
+     dim completed cards as much... probably half of the current dim
+     percentage") — still dims completed cards to read as inactive, just
+     more softly. */
+  background: rgba(0, 0, 0, 0.16);
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.run-card.run-card-success:hover::after,
+.run-card.run-card-fail:hover::after {
+  opacity: 0;
+}
+
+.run-card.run-card-success {
+  background: var(--pi-success-surface);
+  border-color: var(--pi-success-border);
+}
+
+.run-card.run-card-fail {
+  background: var(--pi-danger-surface);
+  border-color: var(--pi-danger-border);
+}
+
+@keyframes card-pulse-glow {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--pi-accent) 45%, transparent), 0 1px 2px var(--pi-shadow-soft);
+  }
+  100% {
+    box-shadow: 0 0 10px 2px color-mix(in srgb, var(--pi-accent) 55%, transparent), 0 1px 2px var(--pi-shadow-soft);
+  }
+}
+
+.run-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+/* M-105 item 13: on the DETAIL page (not the grid card — that's the plain
+   flex row above, reused inside `.mini-gantt`'s card context too), the title
+   row becomes a full-bleed colored banner strip — same status-surface colors
+   the GRID page already uses for a whole card's background
+   (`--pi-success-surface`/`--pi-danger-surface`, see `.run-card-success`/
+   `.run-card-fail` above), just applied to this one header row instead of
+   the whole card. `.run-detail-header`'s own padding was moved to
+   `.run-detail-header-body` specifically so this banner could bleed flush to
+   the header's rounded corners (`.run-detail-header`'s `overflow: hidden`
+   does the actual corner-clipping) — this rule supplies the banner's own
+   inner padding instead, matching the header's original horizontal padding
+   so the title/status text still lines up with the content below it. The
+   full-width divider directly below is a real border on the banner itself
+   (spans the banner's own full bleed width, unlike `.run-prompt`'s inset
+   `border-top` which only spans the padded content column) — so it reads as
+   a clean edge-to-edge rule separating the colored banner from the uncolored
+   body beneath. */
+.run-detail-header .run-card-top {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--pi-border-muted);
+}
+.run-detail-header .run-card-top-success {
+  background: var(--pi-success-surface);
+}
+.run-detail-header .run-card-top-fail {
+  background: var(--pi-danger-surface);
+}
+.run-detail-header .run-card-top-running {
+  background: var(--pi-purple-surface);
+}
+.run-detail-header .run-card-top-queued {
+  background: var(--pi-border-muted);
+}
+
+/* M-105 item 13: the status text itself, sized to match the other
+   prominent elements Chris already approved on this page (the "Steps"
+   heading / duration number both sit at 17-20px — see `.timeline-wrap h2`/
+   `.timeline-duration` below) instead of the tiny 11px uppercase pill used
+   everywhere else (grid cards, etc. — untouched, this override is scoped to
+   the detail page's own banner only). */
+.run-detail-header .status-pill {
+  background: transparent !important;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  gap: 8px;
+}
+.run-detail-header .status-pill .status-dot {
+  width: 9px;
+  height: 9px;
+}
+
+.run-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.run-meta {
+  margin-top: 6px;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--pi-dim);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.status-pill.status-success {
+  background: var(--pi-success-surface);
+  color: var(--pi-success);
+}
+.status-pill.status-fail {
+  background: var(--pi-danger-surface);
+  color: var(--pi-danger);
+}
+.status-pill.status-running {
+  background: var(--pi-purple-surface);
+  color: var(--pi-accent);
+}
+.status-pill.status-queued {
+  background: var(--pi-border-muted);
+  color: var(--pi-dim);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.status-pill.status-running .status-dot {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.empty-state {
+  color: var(--pi-dim);
+  font-size: 14px;
+  padding: 40px 0;
+  text-align: center;
+}
+
+/* ── mini Gantt (grid card, condensed) ───────────────────────────────────
+   Reuses gantt.ts's layout math (computeGanttLayout) — only the rendering
+   is smaller/condensed here, the layout algorithm itself is NOT forked. */
+
+.mini-gantt {
+  position: relative;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--pi-bg);
+  height: 40px;
+}
+
+.mini-gantt-track {
+  position: relative;
+  height: 100%;
+}
+
+/* Bar fill/border/text color all come inline from `stepBarStyle.ts` — Role
+   identity is the bar's base hue in every state (see that module's doc
+   comment). CSS here only owns shape/sizing and the shared "active" pulse
+   (`.step-active`, below, used by both this condensed bar AND the full
+   detail-page `.step-bar`) — a pure `box-shadow` `@keyframes` animation,
+   GPU-cheap, never JS-driven per-frame (point 7's performance ask). */
+.mini-step-bar {
+  position: absolute;
+  top: 6px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1.5px solid transparent;
+}
+
+.mini-gantt-empty,
+.mini-gantt-note {
+  color: var(--pi-dim);
+  font-size: 11px;
+  padding: 12px 0;
+  text-align: center;
+}
+
+/* ── detail view ───────────────────────────────────────────────────────── */
+
+/* M-105 item 13: `.run-detail-header` itself no longer carries padding —
+   it's now just the rounded-corner clipping frame for two independently-
+   backgrounded child sections: `.run-card-top` (the full-bleed colored
+   status banner, edge-to-edge with the card's own rounded corners) and
+   `.run-detail-header-body` (the uncolored meta/prompt content below,
+   which owns the padding the whole header used to have). `overflow: hidden`
+   is what makes the banner's own square corners get clipped to the header's
+   `border-radius` at the top edge, instead of requiring the banner to
+   duplicate/track the radius itself. */
+.run-detail-header {
+  background: var(--pi-surface);
+  border: 1px solid var(--pi-border);
+  border-radius: 10px;
+  margin-bottom: 22px;
+  overflow: hidden;
+}
+
+.run-detail-header-body {
+  padding: 16px 18px;
+}
+
+.run-detail-header .run-title {
+  font-size: 17px;
+  white-space: normal;
+}
+
+.run-detail-header .run-meta {
+  margin-top: 10px;
+}
+
+.run-prompt {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--pi-border-muted);
+}
+
+.run-prompt h3 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pi-dim);
+  font-weight: 600;
+}
+
+.run-prompt-text {
+  margin: 0;
+  font-family: var(--pi-mono);
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--pi-text);
+  max-height: 260px;
+  overflow-y: auto;
+  /* M-105 item 10: this page polls and re-renders live — content height
+     fluctuating right around `max-height` was flickering the scrollbar
+     gutter in/out on every re-render (`overflow-y: auto` only reserves
+     gutter space once content genuinely overflows). `scrollbar-gutter:
+     stable` reserves the gutter unconditionally, so the box's rendered
+     width never shifts as content crosses that threshold — this app's own
+     verification methodology already targets headless Chrome exclusively
+     (see listView.ts's doc comments), so Chromium-only support here is
+     fine. */
+  scrollbar-gutter: stable;
+}
+
+.timeline-wrap {
+  background: var(--pi-surface);
+  border: 1px solid var(--pi-border);
+  border-radius: 10px;
+  padding: 18px;
+  /* M-105 item 11: the track is now computed to FIT this box's own content
+     width (gantt.ts's dynamic px/s scale, driven by detailView.ts's
+     `timelineWidthPx()`) — no horizontal scroll should ever be needed, so
+     the old `overflow-x: auto` escape valve is gone. */
+}
+
+/* M-105 item 11 follow-up: heading + duration share one row, duration
+   pinned to the far right — Chris, verbatim: "Pin the time over to the
+   right like how the status badge is," mirroring `.run-card-top`'s own
+   flex space-between layout (heading/title left, status pill right) one
+   section down. */
+.timeline-heading-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.timeline-wrap h2 {
+  font-size: 17px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--pi-text);
+  font-weight: 700;
+  margin: 0;
+}
+
+/* M-105 item 11: the run's overall duration, relocated here from the old
+   top `.run-meta` line — Chris, verbatim: "highlight that duration by
+   making it a larger font." Anchors what the width-scaled Gantt track
+   below visually represents.
+
+   Follow-up: "Make it and Steps be similar size" — originally this sat
+   much larger (26px) than the (12.5px, uppercase label-styled) "Steps"
+   heading it shared the row with; brought to comparable visual weight by
+   both bumping the heading up (17px, real title case, see `.timeline-wrap
+   h2` above) AND easing the duration down (20px) rather than leaving one
+   number towering over its own section heading. */
+.timeline-duration {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--pi-text);
+}
+
+.timeline-note {
+  font-size: 11.5px;
+  color: var(--pi-dim);
+  margin-bottom: 14px;
+}
+
+.timeline-track {
+  position: relative;
+  min-height: 1px;
+}
+
+.timeline-row {
+  position: relative;
+  height: 46px;
+  margin-bottom: 6px;
+}
+
+/* Fill/border/text color come inline from `stepBarStyle.ts` (same Role-based
+   scheme as `.mini-step-bar`, above) — CSS here only owns shape/sizing. */
+.step-bar {
+  position: absolute;
+  top: 4px;
+  height: 34px;
+  border-radius: 6px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+}
+
+/* Shared "actively running right now" pulse — used by both the condensed
+   grid bar (`.mini-step-bar`) and the full detail-page bar (`.step-bar`),
+   so the same "this is live" visual language reads identically everywhere,
+   while the bar's FILL color still carries Role identity (stepBarStyle.ts). */
+.mini-step-bar.step-active,
+.step-bar.step-active {
+  animation: pulse-border 1.2s ease-in-out infinite;
+}
+
+/* M-105 item 3: the currently-hovered/displayed Step's bar gets a subtle
+   outline ring — the ONLY visual cue on the bar itself that it's "the one
+   the panel below is currently showing" (hover-to-switch has no click/
+   selected state otherwise, so this is what tells a human which bar they're
+   currently looking at, especially once they've moved the mouse off it
+   toward the panel content). Kept intentionally subtle (thin box-shadow
+   ring, not a color change) — the bar's fill still exists purely to carry
+   Role identity + status, this must not compete with that. */
+.step-bar.step-displayed {
+  box-shadow: 0 0 0 2px var(--pi-accent);
+}
+
+/* M-105 items 3/4: the detail panel is now a real color-tinted BOX (border +
+   background from the displayed Step's own Role mini-palette, set inline by
+   detailView.ts's `stepDetailHtml`) rather than a plain top-border strip —
+   and it no longer leads with a redundant title+role-pill header (item 4,
+   Chris explicit: "ditch the title and pill and just do the timebars") —
+   the Gantt bars above already carry Role identity via color + label, and
+   this panel's own background now ALSO carries it, so a written-out repeat
+   here would be the third redundant copy Chris called out, not a second. */
+.step-detail-panel {
+  margin-top: 16px;
+  border: 1px solid var(--pi-border-muted);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 13px;
+}
+
+.step-detail-live {
+  margin-bottom: 8px;
+}
+
+.step-detail-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 14px;
+  font-size: 12.5px;
+  color: var(--pi-dim);
+  margin-bottom: 10px;
+}
+.step-detail-grid dt {
+  color: var(--pi-dim);
+}
+.step-detail-grid dd {
+  margin: 0;
+  color: var(--pi-text);
+}
+
+.tool-call-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  /* M-105 item 10: same live-poll scrollbar-flicker fix as `.run-prompt-text`
+     above — see that rule's own comment for the full reasoning. */
+  scrollbar-gutter: stable;
+}
+
+.tool-call-list li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12px;
+  font-family: var(--pi-mono);
+  background: var(--pi-surface-hover);
+  border-radius: 5px;
+  padding: 4px 8px;
+}
+
+.tool-call-time {
+  color: var(--pi-dim);
+  flex-shrink: 0;
+}
+
+.tool-call-name {
+  color: var(--pi-accent);
+  font-weight: 600;
+}
+
+.tool-call-payload {
+  color: var(--pi-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--pi-accent);
+  font-weight: 600;
+}
+.live-indicator .status-dot {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pi-accent) 70%, transparent); }
+  50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--pi-accent) 0%, transparent); }
+}
+
+.loading, .error-banner {
+  color: var(--pi-dim);
+  padding: 20px 0;
+}
+.error-banner {
+  color: var(--pi-danger);
+}
+
+/* ── M-121: failed-run artifact banner ────────────────────────────────────
+   A dedicated summary of earlier Steps' real output (branch/commit/PR) on a
+   FAILED run's detail view — the card's own motivating incident: a build
+   Step's real pushed work stayed invisible when the following review Step's
+   timeout failed the whole run. Deliberately calm/informational (a soft
+   warning tint, not the harsher --pi-danger red) — this is GOOD news inside
+   a failed run ("here's what's actually recoverable"), not another error. */
+.run-artifacts-banner {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--pi-warning-border);
+  background: var(--pi-warning-surface);
+  border-radius: 6px;
+  font-size: 12.5px;
+}
+.run-artifacts-banner strong {
+  display: block;
+  margin-bottom: 4px;
+}
+.run-artifacts-banner ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.run-artifacts-banner .run-artifacts-step {
+  font-weight: 600;
+}
+.run-artifacts-banner code {
+  font-size: 11.5px;
+}
+
+/* ── M-103: attempt-navigation arrows ─────────────────────────────────────
+   Chris, explicit: "subtle arrow icons, not big fat buttons" — small,
+   low-contrast by default, only picking up real color on hover/focus so
+   they read as a secondary affordance next to the card's own status pill,
+   never competing with it for attention. Used both on a grid card (paging
+   through a ticket's attempts inline, without leaving the grid) and the
+   ticket detail page (same control, larger touch target via more padding,
+   not a different visual language). */
+.attempt-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--pi-dim);
+  white-space: nowrap;
+}
+.attempt-nav-btn {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  color: var(--pi-dim);
+  opacity: 0.55;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+.attempt-nav-btn:hover,
+.attempt-nav-btn:focus-visible {
+  opacity: 1;
+  color: var(--pi-accent);
+  background: var(--pi-surface-hover);
+}
+.attempt-nav-btn:disabled {
+  opacity: 0.2;
+  cursor: default;
+  pointer-events: none;
+}
+.attempt-nav-label {
+  min-width: 3.5em;
+  text-align: center;
+}
+.attempt-nav-detail-link {
+  color: var(--pi-dim);
+  text-decoration: none;
+}
+.attempt-nav-detail-link:hover {
+  color: var(--pi-accent);
+  text-decoration: underline;
+}

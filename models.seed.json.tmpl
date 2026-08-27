@@ -1,0 +1,77 @@
+{
+  "providers": {
+    "local-litellm": {
+      "baseUrl": "http://host.docker.internal:4001/v1",
+      "api": "openai-completions",
+      "apiKey": "__LITELLM_MASTER_KEY__",
+      "compat": {
+        "supportsDeveloperRole": false
+      },
+      "models": [
+        {
+          "id": "medium-moe",
+          "name": "Local medium-moe (litellm)",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 115000,
+          "maxTokens": 16384,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        },
+        {
+          "id": "medium-moe-continue-json",
+          "name": "Local medium-moe, JSON-forced (litellm, pi-continue only)",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 115000,
+          "maxTokens": 16384,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        },
+        {
+          "id": "medium-dense",
+          "name": "Local medium-dense (litellm)",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 32768,
+          "maxTokens": 16384,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        },
+        {
+          "id": "small-moe",
+          "name": "Local small-moe (litellm)",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 65536,
+          "maxTokens": 8192,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        },
+        {
+          "id": "small-dense",
+          "name": "Local small-dense (litellm)",
+          "reasoning": false,
+          "input": ["text", "image"],
+          "contextWindow": 32768,
+          "maxTokens": 8192,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        },
+        {
+          "id": "big-moe",
+          "name": "Local big-moe (litellm)",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 115000,
+          "maxTokens": 16384,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        },
+        {
+          "id": "big-moe-continue-json",
+          "name": "Local big-moe, JSON-forced (litellm, pi-continue only)",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 115000,
+          "maxTokens": 16384,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        }
+      ]
+    }
+  }
+}

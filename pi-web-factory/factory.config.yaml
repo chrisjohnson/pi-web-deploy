@@ -1,0 +1,132 @@
+# factory.config.yaml — pi-web-factory's global Roles registry (M-075).
+#
+# Two kinds of Role, one list (`pi-web-adw-design.md` §7.1/§7.2):
+#   - `kind: agent` — model/thinking/writes (shape ported from upstream SSSF's
+#     `sssf.config.yaml` agent roster), plus a real `system_prompt` (a path to
+#     a `.md` file under `prompts/`, resolved relative to this file's own
+#     directory — read at load time by modules/roles.ts).
+#   - `kind: code` — a `function` name resolved against modules/roles.ts's
+#     small, explicit `CODE_ROLE_REGISTRY` map (no plugin-loading mechanism).
+#
+# ── Known, deliberate duplication ─────────────────────────────────────────
+# `prompts/*.md`'s content is a manually-kept-in-sync copy of the ALREADY-
+# DEPLOYED `jmfederico-pi-web/plugins/pi-web-factory-prompts/roles.json`
+# extension's real prompt text — NOT placeholder text, and NOT yet unified
+# into one source of truth. See modules/roles.ts's header comment for the
+# full explanation of why (short version: pi-web-factory isn't baked into the
+# jmfederico-pi-web container yet — that's M-068, sequenced after this card).
+#
+# Model values are `provider/model-id` strings against this box's real,
+# already-seeded `local-litellm` provider (`jmfederico-pi-web`'s own
+# `models.seed.json.tmpl`) — `big-moe` and `medium-moe` are live model IDs
+# there today, not placeholders. See modules/roles.ts for the load-time
+# validation this shape gets (well-formed `provider/model-id`, NOT reachability
+# — a stale/renamed litellm role is not caught here, see that file's comment).
+#
+# ── `-json`-suffixed model values (M-113) ──────────────────────────────────
+# Every agent Role below whose name is also an envelopeSchemas/
+# jsonSchemaRoles key (plan/build/review/scout/document/decide-retry) points
+# its `model:` at a DEDICATED litellm role carrying that Role's own envelope
+# schema as a `response_format: {type: "json_schema", ...}` litellm_param
+# (`docker/litellm/generated-json-schemas/<roleName>.json`, seeded by
+# `scripts/litellm-bootstrap.sh`'s `PI_WEB_FACTORY_JSON_ROLES` map) — NOT the
+# bare `big-moe`/`medium-moe` role. This is Chris's accepted fallback for
+# pi-web having no per-request response_format passthrough (see the M-113
+# card): the model's own decoding grammar is constrained litellm-side,
+# instead of pi-web-factory forcing the shape per-request (which pi-web's
+# API has no field for). Reassigning which PHYSICAL backend answers e.g.
+# `medium-moe-build-json` still goes through `scripts/set-role.sh` exactly
+# like any other role — only the Role's EXISTENCE (and schema) is this
+# file's concern.
+
+defaults:
+  model: local-litellm/medium-moe
+  thinking: medium # off | minimal | low | medium | high | xhigh | max
+  # pi-web-factory's own machinery, off-limits to every agent Role that
+  # doesn't explicitly name a path here in its own `writes:` — the analogue
+  # of upstream's `adw_modules/`/`adw_sssf_config/` self-protection, adapted
+  # to this project's real directory names (see modules/permissions.ts, which
+  # enforces this list; and pi-web-adw-design.md §3.1 for the tree it protects).
+  protected_files:
+    - modules/
+    - factory.config.yaml
+    - factory.db
+    - chains/
+    - cli.ts
+    - prompts/
+
+# One entry per Role. Agent Roles cover the five identities envelopes.ts has
+# a schema for (envelopeSchemas' registry keys: plan, build, review, scout,
+# document — see modules/envelopes.ts). Code Roles cover deterministic,
+# non-agent work a Workflow can name a Step against (M-076 wires the runner
+# to actually invoke these — this file only declares the registry entry).
+#
+# Model mix (deliberately not uniform, same point upstream's starter roster
+# makes by mixing fireworks/openai): big-moe is reserved for the two phases
+# whose output is hardest to cheaply verify after the fact and most expensive
+# to get wrong downstream — planning (a bad plan corrupts every phase built on
+# it) and review (the last human-trust checkpoint before a chain reports
+# success). build/scout/document are comparatively mechanical given a good
+# plan/diff to work from (implement a spec, recon a codebase, write up a known
+# change) and run more often per chain, so they use medium-moe to keep
+# big-moe's capacity free for the judgment-heavy phases.
+roles:
+  - name: plan
+    kind: agent
+    model: local-litellm/big-moe-plan-json
+    thinking: high
+    writes:
+      - specs/
+    system_prompt: prompts/plan.md
+
+  - name: build
+    kind: agent
+    model: local-litellm/medium-moe-build-json
+    thinking: medium
+    # No writes: key — unrestricted within the target repo (upstream's own
+    # convention: the builder is the one agent with no writes allowlist). It
+    # still cannot touch defaults.protected_files; permissions.ts enforces
+    # that regardless of this field (see isWritePermitted's precedence).
+    system_prompt: prompts/build.md
+
+  - name: review
+    kind: agent
+    model: local-litellm/big-moe-review-json
+    thinking: high
+    writes: [] # read-only: a reviewer that cannot fix cannot quietly fix
+    system_prompt: prompts/review.md
+
+  - name: scout
+    kind: agent
+    model: local-litellm/medium-moe-scout-json
+    thinking: low
+    writes: [] # read-only recon; findings go to the envelope, not the repo
+    system_prompt: prompts/scout.md
+
+  - name: document
+    kind: agent
+    model: local-litellm/medium-moe-document-json
+    thinking: medium
+    writes:
+      - docs/
+      - app_docs/
+      - "**/*.md"
+      - "*.md"
+    system_prompt: prompts/document.md
+
+  - name: run-tests
+    kind: code
+    function: run-tests
+
+  # M-103: retry/new-run/give-up classification for a failed Workflow Run —
+  # a narrow decision, not a judgment-heavy one like plan/review, so it uses
+  # medium-moe (this codebase's cheaper of the two live model tiers, not
+  # big-moe) per the card's own instruction ("doesn't need a strong model").
+  # low thinking: a bounded classification over a compact evidence summary,
+  # not open-ended reasoning over a full codebase.
+  - name: decide-retry
+    kind: agent
+    model: local-litellm/medium-moe-decide-retry-json
+    thinking: low
+    writes: [] # read-only: this Role only classifies, never touches the repo
+    system_prompt: prompts/decide-retry.md

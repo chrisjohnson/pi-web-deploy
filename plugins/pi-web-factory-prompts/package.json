@@ -1,0 +1,9 @@
+{
+  "name": "@local-ai-machine/pi-web-factory-prompts-extension",
+  "private": true,
+  "type": "module",
+  "description": "pi-coding-agent EXTENSION (before_agent_start hook) that gives pi-web-factory agent sessions a true per-role system prompt. NOT a pi-web browser-UI plugin -- see index.ts's header comment for the distinction and why this lives in its own directory, deployed as a subdirectory extension (extensions/pi-web-factory-prompts/index.ts), not via the piWeb.plugins manifest pi-continue-companion uses.",
+  "pi": {
+    "extensions": ["./index.ts"]
+  }
+}

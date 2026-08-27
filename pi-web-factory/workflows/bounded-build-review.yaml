@@ -1,0 +1,87 @@
+# bounded-build-review.yaml — pi-web-factory Workflow definition (M-076).
+#
+# build (agent) -> loop { review (agent), build (agent) }, until
+# review.approved == true, max_rounds: 3. Mirrors upstream SSSF's
+# adw_build_review (design doc §7.2) — the bounded build<->review correction
+# loop.
+#
+# ── How the loop's correction works ──────────────────────────────────────
+# On round 2+, before the loop's inner `build` step runs, the interpreter
+# checks whether the LAST completed round's `review` envelope had
+# approved=false; if so, it folds `review`'s `blocking`/unmet `findings`
+# into that round's `build` prompt as a correction (workflow.ts's
+# `buildLoopCorrectionMessage` — the chain-level equivalent of run.ts's
+# own buildCorrectionMessage, which only covers single-phase parse
+# failures, not this Step-sequence-level rejection). The `build` step's own
+# authored `prompt` below still runs (interpolated), just with the
+# correction prepended ahead of it — so its prompt text stays useful both
+# on round 1 (no correction yet) and on every corrective round after.
+#
+# `until.step: review` names the step INSIDE the loop whose envelope is
+# checked — required by workflowDef.ts's own load-time validation (a loop's
+# `until.step` must be one of its own inner steps).
+#
+# ── Step names must be unique across the WHOLE workflow ───────────────────
+# workflowDef.ts's loader validates step-name uniqueness across the entire
+# Workflow, including inside loops (one flat namespace, needed for
+# unambiguous {{stepName.field}} interpolation and until.step references) —
+# so the initial build step and the loop's own corrective build step are
+# named `build`/`build-retry` respectively, not both `build`.
+
+workflows:
+  - name: bounded-build-review
+    description: >-
+      The user wants correction rounds baked in — "keep fixing it until it's
+      right", something finicky/security-sensitive, or the user explicitly
+      asks for a review loop.
+    steps:
+      - kind: agent
+        name: build
+        role: build
+        title: Build the Implementation
+        summary: Implements the task for real, writing actual files to disk.
+        prompt: |
+          Using your available tools, actually implement the task now (write real files to disk) --
+          do not just describe what you would do.
+
+          Once done, reply with ONLY a single valid JSON object matching this schema (no prose, no markdown fences):
+          {"status": "success"|"fail", "summary": string, "artifacts": string[],
+          "notes_for_next_agent": string, "changed_files": string[], "commit_message": string}
+
+      - kind: loop
+        name: build-review-loop
+        title: Build/Review Correction Loop
+        summary: Repeats review and correction rounds until the implementation is approved, up to a bounded number of rounds.
+        max_rounds: 3
+        until:
+          step: review
+          field: approved
+          equals: true
+        steps:
+          - kind: agent
+            name: review
+            role: review
+            title: Review the Implementation
+            summary: Reads the diff, read-only, and judges whether the work actually meets the task.
+            prompt: |
+              Review the implementation just produced in this session. You are read-only: inspect the
+              work, do not fix anything yourself, no matter how small or obviously correct the fix
+              seems. Build summary: {{build.summary}}
+
+              Reply with ONLY a single valid JSON object matching this schema (no prose, no markdown fences):
+              {"status": "success"|"fail", "summary": string, "artifacts": string[],
+              "notes_for_next_agent": string, "approved": boolean, "findings":
+              [{"requirement": string, "met": boolean, "evidence": string}], "blocking": string[]}
+
+          - kind: agent
+            name: build-retry
+            role: build
+            title: Correct the Implementation
+            summary: Re-implements based on the prior round's review findings.
+            prompt: |
+              Using your available tools, actually implement the task now (write real files to disk) --
+              do not just describe what you would do.
+
+              Once done, reply with ONLY a single valid JSON object matching this schema (no prose, no markdown fences):
+              {"status": "success"|"fail", "summary": string, "artifacts": string[],
+              "notes_for_next_agent": string, "changed_files": string[], "commit_message": string}

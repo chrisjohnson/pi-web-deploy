@@ -1,0 +1,10 @@
+{
+  "name": "@local-ai-machine/pi-continue-companion-plugin",
+  "private": true,
+  "type": "module",
+  "piWeb": {
+    "plugins": [
+      { "id": "pi-continue-companion", "module": "pi-web-plugin.js" }
+    ]
+  }
+}

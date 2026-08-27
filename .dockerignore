@@ -1,0 +1,12 @@
+# pi-web-factory (M-068): keep local dev artifacts and accumulated runtime
+# state out of the build context. node_modules is reinstalled at build time
+# (bun.lock, --frozen-lockfile) for a reproducible image; factory.db* is the
+# trace database, real accumulated observability history that must never be
+# baked into an image layer (see cli.ts's PI_WEB_FACTORY_DB_PATH doc comment
+# for why the running container points it elsewhere entirely).
+pi-web-factory/node_modules
+pi-web-factory/factory.db
+pi-web-factory/factory.db-shm
+pi-web-factory/factory.db-wal
+pi-web-factory/visualizer/node_modules
+pi-web-factory/visualizer/dist

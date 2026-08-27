@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": []
+  },
+  // gantt.test.ts is a plain bun:test unit test (no DOM usage) — it's
+  // already covered by the root tsconfig's typecheck (bun-types included
+  // there), so it's excluded from THIS DOM-scoped config, which drops
+  // bun-types (`types: []` above) and would otherwise fail to resolve
+  // `bun:test`'s module types.
+  "exclude": ["*.test.ts"]
+}

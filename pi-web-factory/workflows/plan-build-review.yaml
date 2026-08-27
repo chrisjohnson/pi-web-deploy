@@ -1,0 +1,55 @@
+# plan-build-review.yaml — pi-web-factory Workflow definition (M-076).
+#
+# plan (agent) -> build (agent) -> review (agent). No loop, no code step —
+# deliberately DIFFERENT from chains/planBuildTest.ts's plan->build->test
+# shape (that one ends in a CODE step running the project's own test
+# command; this one ends in an AGENT reviewing the work). Do not confuse the
+# two or treat them as redundant — see this card's report for the full
+# reasoning.
+#
+# `plan`/`build`/`review` name Roles from factory.config.yaml's `roles:`
+# registry (M-075) — this file only sequences them, it carries no model/
+# prompt/writes config of its own.
+
+workflows:
+  - name: plan-build-review
+    description: >-
+      Default choice for most requests — a clear task where a second agent's
+      review is enough quality gate.
+    steps:
+      - kind: agent
+        name: plan
+        role: plan
+        title: Construct a Plan
+        summary: Reads the task and produces a concrete implementation plan before any code is written.
+        prompt: |
+          Reply with ONLY a single valid JSON object matching this schema (no prose, no markdown fences):
+          {"status": "success"|"fail", "summary": string, "artifacts": string[],
+          "notes_for_next_agent": string, "commit_message": string}
+
+      - kind: agent
+        name: build
+        role: build
+        title: Build the Implementation
+        summary: Implements the plan for real, writing actual files to disk.
+        prompt: |
+          Continuing from the plan you just produced, using your available tools, actually implement
+          the task now (write real files to disk). Plan summary: {{plan.summary}}
+
+          Once done, reply with ONLY a single valid JSON object matching this schema (no prose, no markdown fences):
+          {"status": "success"|"fail", "summary": string, "artifacts": string[],
+          "notes_for_next_agent": string, "changed_files": string[], "commit_message": string}
+
+      - kind: agent
+        name: review
+        role: review
+        title: Review the Implementation
+        summary: Reads the diff, read-only, and judges whether the work actually meets the task.
+        prompt: |
+          Review the implementation just produced in this session. You are read-only: inspect the
+          work, do not fix anything yourself. Build summary: {{build.summary}}
+
+          Reply with ONLY a single valid JSON object matching this schema (no prose, no markdown fences):
+          {"status": "success"|"fail", "summary": string, "artifacts": string[],
+          "notes_for_next_agent": string, "approved": boolean, "findings":
+          [{"requirement": string, "met": boolean, "evidence": string}], "blocking": string[]}

@@ -1,0 +1,14 @@
+{
+  "name": "@pi-web/perf-metrics",
+  "private": true,
+  "type": "module",
+  "piWeb": {
+    "plugins": [
+      {
+        "id": "perf-metrics",
+        "browserRoot": ".",
+        "module": "pi-web-plugin.js"
+      }
+    ]
+  }
+}

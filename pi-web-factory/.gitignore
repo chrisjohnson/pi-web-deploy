@@ -1,0 +1,9 @@
+node_modules/
+# Runtime state, created by cli.ts on first use — never tracked, same
+# convention as upstream SSSF's own adws/adw_data/sssf.db.
+factory.db
+factory.db-shm
+factory.db-wal
+# bun.lock (text) is the tracked lockfile — bun.lockb is a stray binary
+# lockfile some bun versions also write; never intentionally tracked.
+bun.lockb

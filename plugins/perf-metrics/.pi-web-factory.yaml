@@ -1,0 +1,5 @@
+test: |-
+  node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))" && \
+  grep -q '<svg' assets/icon.svg && \
+  grep -q 'uPlot' uPlot.iife.min.js && \
+  test -s uPlot.min.css

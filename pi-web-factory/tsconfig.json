@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleDetection": "force",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext"],
+    "types": ["bun-types"],
+
+    "allowJs": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+
+    "strict": true,
+    "skipLibCheck": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+
+    "noEmit": true
+  },
+
+  // orchestrator/src is browser (DOM) code, checked separately via its own
+  // scoped tsconfig (orchestrator/src/tsconfig.json, `lib: DOM`) — excluded
+  // here so the root-level `tsc --noEmit` (server/CLI/module code, `lib:
+  // ESNext` only, no DOM) stays clean. orchestrator/server.ts itself is NOT
+  // excluded — it's ordinary Bun server code and belongs in this project's
+  // main typecheck scope like every other module. (Renamed from
+  // `visualizer/`, M-105 item 9.)
+  "exclude": ["orchestrator/src", "node_modules"]
+}

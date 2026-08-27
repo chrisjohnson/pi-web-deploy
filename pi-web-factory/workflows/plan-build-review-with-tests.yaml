@@ -1,0 +1,91 @@
+# plan-build-review-with-tests.yaml — pi-web-factory Workflow definition (M-099).
+#
+# plan (agent) -> build (agent) -> test (code: run-tests) -> review (agent).
+# A fourth Workflow variant (M-076's registry made adding one exactly this
+# cheap: a YAML file plus one line in chains/registry.ts's WORKFLOW_FILES —
+# no interpreter change was needed, confirmed by M-099's research).
+#
+# ── Why the test gate before review, not replacing it (M-099 decision) ────
+# M-099's card left the choice between two shapes to the implementer:
+#   (a) plan -> build -> code(run-tests) -> review — mechanical gate
+#       PRECEDES agent review, review still runs and still has the final say.
+#   (b) plan -> build -> code(run-tests) — mechanical gate REPLACES review.
+# Chose (a). Reasoning: `plan-build-review`'s whole point is a real second
+# opinion (a review agent reading the diff, judging fit against the actual
+# task — not just "does it exit 0"). A passing test suite and "this
+# correctly does what was asked" are different claims; collapsing them loses
+# real review coverage that `plan-build-review` already provides today, for
+# no benefit `plan-build-test` (chains/planBuildTest.ts, still deliberately
+# kept as a THIRD option per M-076) doesn't already cover for anyone who
+# wants a purely mechanical gate with no review step at all. Putting the
+# test gate BEFORE review also means a broken build never wastes a review
+# agent's turn on code that doesn't even pass its own tests — `runWorkflow`
+# halts with a distinct `gate-failed` outcome (modules/workflow.ts's
+# `runCodeStep`) before `review` ever runs.
+#
+# ── Requires the project to have a configured `test:` command ─────────────
+# `run-tests` (factory.config.yaml's `roles:` registry, function resolved
+# against modules/roles.ts's CODE_ROLE_REGISTRY) shells out to the target
+# project's `.pi-web-factory.yaml` `test:` command (modules/config.ts). A
+# project with no `.pi-web-factory.yaml`, or one that omits `test:`, fails
+# this step loudly with a `"failed"` Workflow Run outcome (M-099's own
+# latent-gap fix in `runCodeStep`) rather than silently no-op-passing —
+# use `plan-build-review` instead for a target with no test command.
+#
+# `plan`/`build`/`review`/`run-tests` name Roles from factory.config.yaml's
+# `roles:` registry (M-075) — this file only sequences them, it carries no
+# model/prompt/writes config of its own.
+
+workflows:
+  - name: plan-build-review-with-tests
+    description: >-
+      Like plan-build-review, but the project's own real test command must
+      pass as a mechanical gate before the review agent even runs — the user
+      wants both a passing test suite AND a second agent's judgment call, not
+      just one or the other. Requires the target project to have a
+      .pi-web-factory.yaml declaring its test command.
+    steps:
+      - kind: agent
+        name: plan
+        role: plan
+        title: Construct a Plan
+        summary: Reads the task and produces a concrete implementation plan before any code is written.
+        prompt: |
+          Reply with ONLY a single valid JSON object matching this schema (no prose, no markdown fences):
+          {"status": "success"|"fail", "summary": string, "artifacts": string[],
+          "notes_for_next_agent": string, "commit_message": string}
+
+      - kind: agent
+        name: build
+        role: build
+        title: Build the Implementation
+        summary: Implements the plan for real, writing actual files to disk.
+        prompt: |
+          Continuing from the plan you just produced, using your available tools, actually implement
+          the task now (write real files to disk). Plan summary: {{plan.summary}}
+
+          Once done, reply with ONLY a single valid JSON object matching this schema (no prose, no markdown fences):
+          {"status": "success"|"fail", "summary": string, "artifacts": string[],
+          "notes_for_next_agent": string, "changed_files": string[], "commit_message": string}
+
+      - kind: code
+        name: test
+        role: run-tests
+        title: Run the Test Suite
+        summary: Mechanically runs the project's own configured test command as a gate before review.
+
+      - kind: agent
+        name: review
+        role: review
+        title: Review the Implementation
+        summary: Reads the diff, read-only, and judges whether the work actually meets the task (tests already passed by this point).
+        prompt: |
+          Review the implementation just produced in this session. The project's own automated tests
+          have already passed (a prior, mechanical step) — focus your review on correctness/fit against
+          the task, not on re-running tests yourself. You are read-only: inspect the work, do not fix
+          anything yourself. Build summary: {{build.summary}}
+
+          Reply with ONLY a single valid JSON object matching this schema (no prose, no markdown fences):
+          {"status": "success"|"fail", "summary": string, "artifacts": string[],
+          "notes_for_next_agent": string, "approved": boolean, "findings":
+          [{"requirement": string, "met": boolean, "evidence": string}], "blocking": string[]}
