@@ -1,0 +1,60 @@
+{
+  "type": "json_schema",
+  "json_schema": {
+    "name": "pi_web_factory_document_v1",
+    "strict": true,
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "success",
+            "fail"
+          ]
+        },
+        "summary": {
+          "default": "",
+          "type": "string"
+        },
+        "artifacts": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes_for_next_agent": {
+          "default": "",
+          "type": "string"
+        },
+        "document_path": {
+          "default": "",
+          "type": "string"
+        },
+        "documented_files": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "commit_message": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "summary",
+        "artifacts",
+        "notes_for_next_agent",
+        "document_path",
+        "documented_files",
+        "commit_message"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

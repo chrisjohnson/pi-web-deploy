@@ -1,0 +1,81 @@
+{
+  "type": "json_schema",
+  "json_schema": {
+    "name": "pi_web_factory_review_v1",
+    "strict": true,
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "success",
+            "fail"
+          ]
+        },
+        "summary": {
+          "default": "",
+          "type": "string"
+        },
+        "artifacts": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes_for_next_agent": {
+          "default": "",
+          "type": "string"
+        },
+        "approved": {
+          "default": false,
+          "type": "boolean"
+        },
+        "findings": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "requirement": {
+                "type": "string"
+              },
+              "met": {
+                "type": "boolean"
+              },
+              "evidence": {
+                "default": "",
+                "type": "string"
+              }
+            },
+            "required": [
+              "requirement",
+              "met",
+              "evidence"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "blocking": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "status",
+        "summary",
+        "artifacts",
+        "notes_for_next_agent",
+        "approved",
+        "findings",
+        "blocking"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

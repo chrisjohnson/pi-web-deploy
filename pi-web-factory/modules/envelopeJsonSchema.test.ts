@@ -12,8 +12,8 @@ import {
 import { envelopeSchemas } from "./envelopes.ts";
 import { loadRolesConfig } from "./roles.ts";
 
-/** `docker/litellm/generated-json-schemas/` — same directory `generate-litellm-schemas.ts` writes to (its own `resolve(here, "../../docker/litellm/generated-json-schemas")`, `here` being `pi-web-factory/`), resolved from THIS file's own location (`modules/`) instead — one directory further up. */
-const GENERATED_SCHEMA_DIR = join(import.meta.dir, "..", "..", "..", "docker", "litellm", "generated-json-schemas");
+/** `pi-web-factory/generated-json-schemas/` — same directory `generate-litellm-schemas.ts` writes to (its own `resolve(here, "generated-json-schemas")`, `here` being `pi-web-factory/`), resolved from THIS file's own location (`modules/`) instead — one directory up. M-134: this repo's own copy, deliberately NOT the same directory local-ai-machine's litellm-bootstrap.sh reads (see generate-litellm-schemas.ts's header for why the two are intentionally decoupled). */
+const GENERATED_SCHEMA_DIR = join(import.meta.dir, "..", "generated-json-schemas");
 
 /** Recursively asserts every `type: "object"` node in a JSON Schema carries `additionalProperties: false` and lists every one of its own `properties` keys in `required` — the two properties litellm/OpenAI strict `json_schema` mode actually needs, checked structurally rather than trusting `z.toJSONSchema`'s defaults blindly. */
 function assertStrictObjectShape(node: unknown, path = "$"): void {

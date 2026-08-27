@@ -1,0 +1,30 @@
+{
+  "type": "json_schema",
+  "json_schema": {
+    "name": "pi_web_factory_decide_retry_v1",
+    "strict": true,
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": [
+            "retry",
+            "new-run",
+            "give-up"
+          ]
+        },
+        "reasoning": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "decision",
+        "reasoning"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

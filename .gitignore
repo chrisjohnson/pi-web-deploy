@@ -2,3 +2,9 @@ node_modules/
 .claude/worktrees-bak
 .fleet/worktrees
 .DS_Store
+__pycache__/
+.pytest_cache/
+pi-web-factory/factory.db
+pi-web-factory/factory.db-shm
+pi-web-factory/factory.db-wal
+pi-web-factory/visualizer/dist

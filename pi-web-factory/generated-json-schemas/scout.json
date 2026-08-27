@@ -1,0 +1,64 @@
+{
+  "type": "json_schema",
+  "json_schema": {
+    "name": "pi_web_factory_scout_v1",
+    "strict": true,
+    "schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "success",
+            "fail"
+          ]
+        },
+        "summary": {
+          "default": "",
+          "type": "string"
+        },
+        "artifacts": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes_for_next_agent": {
+          "default": "",
+          "type": "string"
+        },
+        "findings": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "note": {
+                "default": "",
+                "type": "string"
+              }
+            },
+            "required": [
+              "file",
+              "note"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "status",
+        "summary",
+        "artifacts",
+        "notes_for_next_agent",
+        "findings"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
