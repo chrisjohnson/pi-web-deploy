@@ -131,15 +131,19 @@ fi
 # git-operations consumer here, not pi-web itself.
 if [ -n "$GITHUB_APP_ID" ]; then
   git config --global credential.helper "/app/credential-helper/github-app-git-credential-helper.mjs"
-  # url.<base>.insteadOf is multi-valued in git, but plain `git config
-  # <key> <value>` (no --add) REPLACES rather than appends when the key
-  # already has a value — confirmed live during M-134 validation: the
-  # second call below was silently overwriting the first, so only
-  # ssh://git@github.com/ remotes got rewritten and plain SCP-style
-  # git@github.com:owner/repo remotes (the more common clone form) fell
-  # through with no credential at all, since the SSH key mount this
-  # replaced is gone. --add on the second call fixes it.
-  git config --global url."https://github.com/".insteadOf "git@github.com:"
+  # url.<base>.insteadOf is multi-valued in git, and this whole block runs
+  # on EVERY container start against a git config that PERSISTS across
+  # restarts (bind-mounted home dir) — a plain (non---add) `git config`
+  # call only overwrites cleanly the very first time; once the key holds
+  # more than one value (exactly what the two lines below produce), a
+  # later plain call refuses outright ("cannot overwrite multiple values
+  # with a single value"), and blind --add on every restart would pile up
+  # a fresh duplicate pair each time instead. Confirmed live: this
+  # crash-looped a container after its second-ever restart. --unset-all
+  # first guarantees a clean slate before either --add, regardless of how
+  # many times this has already run.
+  git config --global --unset-all url."https://github.com/".insteadOf 2>/dev/null || true
+  git config --global --add url."https://github.com/".insteadOf "git@github.com:"
   git config --global --add url."https://github.com/".insteadOf "ssh://git@github.com/"
 fi
 
