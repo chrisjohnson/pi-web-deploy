@@ -1,0 +1,153 @@
+name: docker
+
+# This repo's own compose service definitions (M-134), same pattern
+# dsh-deploy/oh-my-pi-deploy established: this repo owns the structure
+# (image, volumes, environment); the including compose file
+# (local-ai-machine's docker/docker-compose.yml) supplies only
+# machine-specific VALUES via env vars, through its own .env.
+#
+# Three services, two images: jmfederico-pi-web and
+# pi-web-factory-orchestrator both run the SAME image built from this
+# repo's root Dockerfile (pi-web-factory is baked into it, M-068) — the
+# orchestrator is a separate, independently-restartable read-only UI over
+# pi-web-factory's trace db, not a second process bolted onto the main
+# container. pi-web-session-watcher is a genuinely separate service with
+# its own Dockerfile (./session-watcher), tightly coupled to pi-web's
+# session lifecycle but with no shared code.
+services:
+  jmfederico-pi-web:
+    image: ghcr.io/chrisjohnson/pi-web-deploy:${PI_WEB_DEPLOY_TAG:-latest}
+    container_name: pi-web
+    user: "1000:1000"
+    tty: true
+    stdin_open: true
+    ports:
+      - "8080:3000" # Expose the Next.js UI port
+      # perf-server.js (the plugin's Prometheus-query backend proxy) runs
+      # as its own dedicated containerized service
+      # (pi-web-perf-metrics-proxy, stays in local-ai-machine — reads FROM
+      # this durable state, doesn't reference this image) — no port
+      # mapping needed here for it.
+    volumes:
+      - ${SHARED_WORKSPACE_DIR}:/work
+      - ${PI_WEB_HOME_DIR}:/home/piweb/.pi-web
+      # GitHub App private key (M-134) — read-only, consumed by
+      # docker-entrypoint.sh's credential-helper setup. Replaces the old
+      # /home/chris/.ssh:/home/piweb/.ssh mount.
+      - ${GITHUB_APP_PRIVATE_KEY_HOST_PATH}:/run/secrets/github-app-agent-key.pem:ro
+      - ${DOCKER_SOCK_PATH:-/var/run/docker.sock}:/var/run/docker.sock
+    labels:
+      com.local-ai-machine.always-up: "true"
+    group_add:
+      - "${DOCKER_GID:-131}" # docker group GID
+    environment:
+      # Absolute path for pi-web config directory
+      - PI_CODING_AGENT_DIR=/home/piweb/.pi-web
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      - GITHUB_APP_ID=${GITHUB_APP_ID}
+      - GITHUB_APP_INSTALLATION_ID=${GITHUB_APP_INSTALLATION_ID}
+      - GITHUB_APP_PRIVATE_KEY_PATH=/run/secrets/github-app-agent-key.pem
+      # piwebClient.ts's DEFAULT_BASE_URL falls back to the box's external
+      # LAN IP when this is unset — correct for a Mac dev session, but
+      # WRONG here: pi-web-factory runs INSIDE this same container, so a
+      # self-call through the external IP is a hairpin NAT loop (confirmed
+      # live 2026-08-13 — a misleading "cwd field must be a string" 400
+      # sent a real interactive session down a multi-hour debugging dead
+      # end chasing a code bug that didn't exist). Loopback avoids the
+      # hairpin entirely.
+      - PI_WEB_FACTORY_BASE_URL=http://127.0.0.1:3000/api
+      # M-094/M-121: pi-web-factory's own Workflow-Step wait-loop timeout
+      # (modules/piwebClient.ts's waitForCompletion). Must match
+      # pi-web-factory-orchestrator's PI_WEB_FACTORY_STEP_TIMEOUT_MS below
+      # — orchestrator's reconciliation pass reuses this exact value as its
+      # staleness threshold. Real incident (2026-08-13): these drifted and
+      # the reconciliation sweep force-failed a genuinely in-progress
+      # review step at ~5min because ITS threshold was 2min while the
+      # runner's own budget was 10min. Both raised to 1800000 (30min)
+      # together by M-121 (2026-08-17) — see that ticket for the full
+      # incident.
+      - PI_WEB_FACTORY_STEP_TIMEOUT_MS=${PI_WEB_FACTORY_STEP_TIMEOUT_MS:-1800000}
+      # M-109: durable-mount allowlist for modules/worktree.ts's
+      # createRunWorktree pre-flight guard. This container has exactly ONE
+      # writable bind mount that survives a container recreate for project
+      # roots — /work (above). Real incident: a project registered outside
+      # this mount had 4 real Workflow Runs' worktrees/branches silently
+      # lost on the next recreate (M-109). Deliberately does NOT include
+      # /home/piweb/.pi-web (also durable) — that's pi-web's own config
+      # dir, never a valid project root.
+      - PI_WEB_FACTORY_DURABLE_MOUNTS=/work
+      # @juicesharp/rpiv-web-tools (see settings.seed.json's packages
+      # array): reuses the SearxNG instance already running in
+      # local-ai-machine rather than a second search stack. This service
+      # is bridge-networked (not network_mode: host), so it reaches
+      # searxng via container-to-container DNS + searxng's internal port
+      # (8080), not host.docker.internal — confirmed live (200 from
+      # /healthz).
+      - WEB_SEARCH_PROVIDER=searxng
+      - SEARXNG_URL=http://searxng:8080
+    working_dir: /work
+    command: ["bash", "-c", "pi-web-sessiond & PI_WEB_HOST=0.0.0.0 PI_WEB_PORT=3000 pi-web-server"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - litellm
+
+  # Read-only web UI over pi-web-factory's trace db. Reuses the SAME image
+  # as jmfederico-pi-web (pi-web-factory is baked in, M-068), a separate
+  # service for an independent restart/redeploy lifecycle — a bug or
+  # update in this UI shouldn't need to restart the container hosting
+  # every live coding session. Only mounts .pi-web (the entrypoint's
+  # shared seed/sync logic wants to write there once too) — no
+  # turnstone-workspace, no docker.sock, no GitHub App key, nothing this
+  # read-only server needs. No auth (matching pi-web's own explicit
+  # LAN-only, no-auth choice on 8080) — don't expose this port past the
+  # LAN boundary either.
+  pi-web-factory-orchestrator:
+    image: ghcr.io/chrisjohnson/pi-web-deploy:${PI_WEB_DEPLOY_TAG:-latest}
+    container_name: pi-web-factory-orchestrator
+    entrypoint: /usr/local/bin/docker-entrypoint.sh
+    # Hardcoded absolute path rather than $HOME: docker compose interpolates
+    # bare $VAR/${VAR} in this YAML file using the HOST's own environment at
+    # `docker compose up` time (caught live — first attempt resolved to the
+    # host's own $HOME, not the container's /home/piweb, before this was
+    # ever reachable at runtime), not the container's shell at runtime.
+    # $$HOME (compose's own escape syntax) would also work; this is simpler
+    # and matches this image's one fixed runtime user (piweb) always.
+    command: ["sh", "-c", "bun /home/piweb/pi-web-factory/orchestrator/server.ts"]
+    restart: unless-stopped
+    labels:
+      com.local-ai-machine.always-up: "true"
+    ports:
+      - "8090:8090"
+    volumes:
+      - ${PI_WEB_HOME_DIR}:/home/piweb/.pi-web
+    environment:
+      - PI_CODING_AGENT_DIR=/home/piweb/.pi-web
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      # cli.ts (M-068) writes the real trace db here, under the same
+      # bind-mounted, persistent config dir every pi-web-factory run inside
+      # jmfederico-pi-web uses — NOT this service's own co-located default,
+      # which would point at the baked-in code copy instead.
+      - PI_WEB_FACTORY_ORCHESTRATOR_DB_PATH=/home/piweb/.pi-web/pi-web-factory-data/factory.db
+      # Must match jmfederico-pi-web's own PI_WEB_FACTORY_STEP_TIMEOUT_MS
+      # above — same underlying env var reference so the two can never
+      # drift again the way they did in the 2026-08-13 incident.
+      - PI_WEB_FACTORY_STEP_TIMEOUT_MS=${PI_WEB_FACTORY_STEP_TIMEOUT_MS:-1800000}
+    depends_on:
+      - jmfederico-pi-web
+
+  pi-web-session-watcher:
+    image: ghcr.io/chrisjohnson/pi-web-deploy-session-watcher:${PI_WEB_DEPLOY_TAG:-latest}
+    container_name: pi-web-session-watcher
+    restart: unless-stopped
+    labels:
+      com.local-ai-machine.always-up: "true"
+    network_mode: host
+    environment:
+      - PI_WEB_WATCHER_BASE_URL=${PI_WEB_WATCHER_BASE_URL:-http://127.0.0.1:8080}
+      # Comma-separated list of session IDs to watch (M-116). Defaults to
+      # app/config.py's own built-in default if unset.
+      - PI_WEB_WATCHER_SESSION_IDS=${PI_WEB_WATCHER_SESSION_IDS:-}
+      - PI_WEB_WATCHER_CWD=${PI_WEB_WATCHER_CWD:-/work/local-ai-machine}
+      - PI_WEB_WATCHER_POLL_INTERVAL_S=${PI_WEB_WATCHER_POLL_INTERVAL_S:-45}
+      - PI_WEB_WATCHER_COOLDOWN_S=${PI_WEB_WATCHER_COOLDOWN_S:-60}
