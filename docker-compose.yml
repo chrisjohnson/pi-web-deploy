@@ -136,6 +136,27 @@ services:
     depends_on:
       - jmfederico-pi-web
 
+  # Watches a manually-configured list of real, live pi-web interactive
+  # chat sessions (PI_WEB_WATCHER_SESSION_IDS, comma-separated; defaults
+  # to app/config.py's own built-in default if unset) and auto-sends a
+  # continuation message when it detects pi-web's own internal 5-minute
+  # idle-timeout aborting a legitimately-still-generating request, so
+  # Chris doesn't have to manually type "keep going" every time.
+  # Deliberately manual opt-in, not every session — to watch an
+  # additional session, add its ID to the env var below and restart this
+  # container. Each configured session is detected/rate-limited fully
+  # independently, so one session's cooldown never blocks another's.
+  # Explicitly never fires on a deliberate user Stop-button click (a
+  # textually distinct failure pattern — see app/detect.py's module
+  # docstring for the exact two shapes and how they're told apart).
+  #
+  # network_mode: host — jmfederico-pi-web publishes its UI/API on the
+  # host's 127.0.0.1:8080 (bridge-network "8080:3000" mapping), and only
+  # host networking lets this container reach that loopback-bound port.
+  #
+  # com.local-ai-machine.always-up: this is infra, not a "model" by
+  # local-ai-machine's own two-tier convention — its stop-everything-
+  # exclusive logic must never stop it.
   pi-web-session-watcher:
     image: ghcr.io/chrisjohnson/pi-web-deploy-session-watcher:${PI_WEB_DEPLOY_TAG:-latest}
     container_name: pi-web-session-watcher
