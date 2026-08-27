@@ -785,7 +785,9 @@ describe("orchestrator server — M-121 hotfix: startup schema migration against
 // the real compose file (not a fixture) so it fails again the moment either
 // service's value drifts, whichever direction.
 describe("docker-compose.yml — PI_WEB_FACTORY_STEP_TIMEOUT_MS deployment-config drift guard", () => {
-  const composePath = join(import.meta.dir, "..", "..", "..", "docker", "docker-compose.yml");
+  // M-134: this repo's own docker-compose.yml now lives at the repo root
+  // (was local-ai-machine's docker/docker-compose.yml pre-extraction).
+  const composePath = join(import.meta.dir, "..", "..", "docker-compose.yml");
 
   function stepTimeoutForService(composeYaml: string, serviceName: string): string | undefined {
     const serviceStart = composeYaml.indexOf(`\n  ${serviceName}:\n`);
@@ -795,7 +797,12 @@ describe("docker-compose.yml — PI_WEB_FACTORY_STEP_TIMEOUT_MS deployment-confi
     const nextServiceMatch = /\n {2}\S/.exec(composeYaml.slice(serviceStart + 1));
     const serviceEnd = nextServiceMatch ? serviceStart + 1 + nextServiceMatch.index : composeYaml.length;
     const block = composeYaml.slice(serviceStart, serviceEnd);
-    return /PI_WEB_FACTORY_STEP_TIMEOUT_MS=(\d+)/.exec(block)?.[1];
+    // M-134: captures the raw value, not just literal digits — both
+    // services now reference the same ${PI_WEB_FACTORY_STEP_TIMEOUT_MS:-...}
+    // env var expression (see docker-compose.yml), which structurally
+    // can't drift, but a literal override in one and not the other should
+    // still fail this guard.
+    return /PI_WEB_FACTORY_STEP_TIMEOUT_MS=(\S+)/.exec(block)?.[1];
   }
 
   test("jmfederico-pi-web and pi-web-factory-orchestrator set the identical PI_WEB_FACTORY_STEP_TIMEOUT_MS value", () => {
