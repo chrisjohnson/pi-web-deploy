@@ -1,0 +1,37 @@
+---
+id: K-000
+# Filename pattern: {ID}-{slugified-title}.md
+title: <short title>
+initiative_id: null             # set to an initiatives/<id> slug if part of a cross-repo initiative
+claimed_by: null                 # pet name of the agent session working this card, e.g. otter
+claimed_at: null                 # ISO8601, paired with claimed_by
+blocks: null                     # set on a child/sub-blocker card: the parent card id it blocks
+blocked_by: null                 # set on a card that can't proceed until another card finishes
+status: null                     # or "needs-refinement" -- can't be scoped/promoted yet; see AGENTS.md §4b
+related_cards: []
+---
+
+# K-000 — <short title>
+
+## Context
+<!-- why this card exists: root cause, links to runbooks/PRs/related cards -->
+
+## Plan
+<!-- ordered checklist -->
+1. [ ]
+
+## Signals
+<!-- append-only. Leave signals for other agents. Format:
+     <!-- signal: <pet-name> <ISO8601-UTC> — <short message> -->
+     Examples:
+     <!-- signal: otter 2025-07-15T14:30Z — claiming, will work on API layer -->
+     <!-- signal: otter 2025-07-15T15:10Z — blocked on K-003, need schema first -->
+     <!-- signal: otter 2025-07-15T15:45Z — done, moved to done/ -->
+-->
+
+## Decision log
+<!-- append-only, one line per entry, newest last. Never move this card to done/
+     without a line here explaining why. -->
+
+## Handoff notes
+<!-- what's half-done, what the next agent picking this up should do first. -->

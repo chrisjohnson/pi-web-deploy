@@ -1,0 +1,4 @@
+node_modules/
+.claude/worktrees-bak
+.fleet/worktrees
+.DS_Store
