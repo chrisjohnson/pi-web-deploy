@@ -133,10 +133,10 @@ export type SessionUiEvent = { type: string; seq?: number; [key: string]: unknow
  * DHCP reassigned a new address on WiFi: `192.168.1.21` -> `192.168.1.226`),
  * breaking every dev/test invocation until the constant was updated by hand.
  * This is a genuinely dev-only convenience value — once pi-web-factory is
- * baked into the `jmfederico-pi-web` container itself (M-068), the real
- * default becomes a loopback address (design doc §2), which won't have this
- * problem at all. Until then, the env var means a future IP change is a
- * one-line shell export, not a code edit + redeploy.
+ * baked into the `jmfederico-pi-web` container itself, the real default
+ * becomes a loopback address (design doc §2), which won't have this problem
+ * at all. Until then, the env var means a future IP change is a one-line
+ * shell export, not a code edit + redeploy.
  */
 export const DEFAULT_BASE_URL = process.env["PI_WEB_FACTORY_BASE_URL"] ?? "http://192.168.1.226:8080/api";
 
@@ -170,7 +170,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-// ── Role marker (M-069: true system prompt via before_agent_start) ───────
+// ── Role marker (true system prompt via before_agent_start) ────────────────
 
 /**
  * Builds the `[[pi-web-factory:role=<name>]]` marker `pi-web-factory-prompts`
@@ -199,7 +199,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * This is the real system-prompt delivery mechanism now — chain code no
  * longer prepends full role-identity paragraphs to prompt text itself (that
  * text now lives once, in `plugins/pi-web-factory-prompts/roles.json`, kept
- * in sync with this constant by hand until M-075 unifies config).
+ * in sync with this constant by hand).
  */
 export function roleMarker(role: string): string {
   return `[[pi-web-factory:role=${role}]]`;
@@ -298,7 +298,7 @@ export async function getStatus(baseUrl: string, sessionId: string, cwd: string)
  * `setModel`).
  *
  * **The response is a `MessagePage` envelope (`{messages, start, total}`),
- * NOT a bare array** — confirmed live 2026-08-13 (M-114 follow-up). This
+ * NOT a bare array** — confirmed live 2026-08-13. This
  * function used to treat the response itself as `SessionMessage[]`
  * directly (stale — the "no paging params -> bare array" assumption in
  * this doc comment no longer holds against the currently-installed pi-web
@@ -343,34 +343,31 @@ export function lastAssistantText(messages: SessionMessage[]): string | undefine
 
 /**
  * Default `waitForCompletion` timeout, overridable via
- * `PI_WEB_FACTORY_STEP_TIMEOUT_MS` (M-094) — matches this module's own
+ * `PI_WEB_FACTORY_STEP_TIMEOUT_MS` — matches this module's own
  * `PI_WEB_FACTORY_BASE_URL` convention. Needed once a Step's completion
  * request can genuinely queue behind another model's full generation (the
- * cross-model request-serialization proxy, M-094) — 120s was sized for
+ * cross-model request-serialization proxy) — 120s was sized for
  * "pi-web is just slow sometimes," not "this request may sit behind someone
  * else's multi-minute generation before it even starts." Only affects
  * pi-web-factory's own automated wait-loop; a human's own pi-web browser
  * session never runs this code (see this function's own doc comment) — the
  * override cannot, by construction, change how a human waits.
  *
- * M-121 (2026-08-17): raised the code-level fallback from 120s to 30 minutes
- * (1_800_000ms) — Chris's decision, live-incident-driven: a real
- * `waitForCompletion` timeout fired on a Step whose underlying model request
- * eventually succeeded anyway (`litellm-queue-haproxy` logs confirmed it),
- * just after the Step had already given up waiting. "If the model is still
- * doing work, does the factory really even benefit by having a timeout?"
- * (Chris, verbatim) — a genuinely-still-working model shouldn't be
+ * The code-level fallback is 30 minutes (1_800_000ms), not the smaller
+ * value it might otherwise be tempting to use: a `waitForCompletion` timeout
+ * firing on a Step whose underlying model request goes on to succeed anyway
+ * — just after the Step had already given up waiting — is strictly worse
+ * than waiting longer, since a genuinely-still-working model shouldn't be
  * interrupted. The deployed default lives in `docker/docker-compose.yml`'s
- * own `PI_WEB_FACTORY_STEP_TIMEOUT_MS` (also raised by this card, from
- * 600000/10min to 1800000/30min); this in-code fallback is bumped to match
- * so the two never silently disagree for any invocation that skips
- * docker-compose entirely. A genuinely stuck (not just slow) Step is now
- * handled by `workflow.ts`'s circuit-breaker retry (M-121) layered on top of
- * this timeout, not by shortening the timeout itself.
+ * own `PI_WEB_FACTORY_STEP_TIMEOUT_MS`; this in-code fallback is kept in
+ * sync with it so the two never silently disagree for any invocation that
+ * skips docker-compose entirely. A genuinely stuck (not just slow) Step is
+ * handled by `workflow.ts`'s circuit-breaker retry layered on top of this
+ * timeout, not by shortening the timeout itself.
  */
-// Exported (M-100 Fix 2) so the orchestrator's reconciliation pass can reuse
-// the SAME staleness threshold as this module's own wait-loop, rather than
-// inventing a second env var/constant for "how long is too long to still be
+// Exported so the orchestrator's reconciliation pass can reuse the SAME
+// staleness threshold as this module's own wait-loop, rather than inventing
+// a second env var/constant for "how long is too long to still be
 // running" — see orchestrator/server.ts's reconciliation pass for the other
 // use site.
 export const DEFAULT_WAIT_FOR_COMPLETION_TIMEOUT_MS = (() => {
@@ -381,7 +378,7 @@ export const DEFAULT_WAIT_FOR_COMPLETION_TIMEOUT_MS = (() => {
 })();
 
 export interface WaitForCompletionOptions {
-  /** Overall timeout in ms before giving up and returning an "error" result. Default 1_800_000 (30min, M-121), or `PI_WEB_FACTORY_STEP_TIMEOUT_MS` if set. */
+  /** Overall timeout in ms before giving up and returning an "error" result. Default 1_800_000 (30min), or `PI_WEB_FACTORY_STEP_TIMEOUT_MS` if set. */
   timeoutMs?: number;
   /** Poll interval in ms for the `/status` fallback. Default 1500. */
   pollIntervalMs?: number;
@@ -399,7 +396,7 @@ export interface WaitForCompletionOptions {
  * actual wait is `MESSAGE_SETTLE_RETRY_BASE_DELAY_MS * 2^(attempt-1)`,
  * capped at `MESSAGE_SETTLE_RETRY_MAX_DELAY_MS`.
  *
- * M-114 (2026-08-13): the original fixed 400ms/3-attempts budget (max
+ * Confirmed 2026-08-13: the original fixed 400ms/3-attempts budget (max
  * ~800ms of extra wait) was confirmed INSUFFICIENT under real load — a
  * live-traced failing run showed the model's response had genuinely
  * settled to valid, schema-conforming JSON, yet `run.ts`'s gate check still
@@ -421,7 +418,7 @@ export const MESSAGE_SETTLE_RETRY_MAX_DELAY_MS = 5_000;
  * whatever the last fetch produced. Combined with the exponential backoff
  * above, 8 attempts spans roughly 400+800+1600+3200+5000+5000+5000 ≈ 21s of
  * total wait budget in the worst case — generous enough for the real
- * settle-under-contention delays M-114 observed, while still failing fast
+ * settle-under-contention delays observed, while still failing fast
  * (first retry or two) in the common, uncontended case. Still bounded, not
  * unbounded: a model that has genuinely produced no text after real
  * upstream retries (see `run.ts`'s own retry-on-parse-failure loop) should
@@ -457,7 +454,7 @@ export type WaitForCompletionResult =
  * BASE_DELAY_MS * 2^(attempt-1)`, capped at `MESSAGE_SETTLE_RETRY_MAX_
  * DELAY_MS`) — fails fast on the common case (settles within the first
  * retry or two) while still covering the multi-second real-world gaps
- * M-114 observed under concurrent-request contention. Gives up after the
+ * observed under concurrent-request contention. Gives up after the
  * budget and returns whatever the last fetch produced — if the model
  * genuinely produced no text after real retries, that's a real failure and
  * should still surface as such, not be masked by this budget.
