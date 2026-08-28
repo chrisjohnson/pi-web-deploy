@@ -1,48 +1,43 @@
 /**
- * retryTrigger.ts: the reconciliation-loop wiring for M-103's retry
+ * retryTrigger.ts: the reconciliation-loop wiring for the automated retry
  * mechanism — ties `retryDecision.ts`'s evidence-stack/decision-Role
  * together with a ticket's `retries` budget, invoked from
- * `orchestrator/server.ts`'s reconciliation pass (M-100's `reconcileStuckRuns`
- * infrastructure) after a run is marked `status='fail'`.
+ * `orchestrator/server.ts`'s reconciliation pass (the same
+ * `reconcileStuckRuns` infrastructure) after a run is marked `status='fail'`.
  *
  * ── STOPPED SHORT of actually spawning a new job-runner process ──────────
- * The card's Plan §5 says the trigger should "kick off the next attempt
- * (spawning a job-runner invocation the same way anything else does today —
- * `docker exec pi-web bun cli.ts ...`)". Investigated directly (M-103's own
- * Decision log has the full trail): `orchestrator/server.ts` runs inside the
- * `pi-web-factory-orchestrator` container (renamed from
- * `pi-web-factory-visualizer`, M-105 item 9 — same container, same
- * constraints described below, name only), a SEPARATE container from
- * `pi-web` (the one `cli.ts` needs to run co-located inside, since a
- * Workflow Run's git worktree/`testCmd` shell-outs are LOCAL filesystem
- * operations — `cli.ts`'s own module doc comment). `docker/docker-compose.yml`
- * confirms `pi-web-factory-orchestrator`'s service definition explicitly does NOT mount
- * `/var/run/docker.sock` (its own comment: "no docker.sock, no SSH key,
- * nothing this read-only server needs") — so this process has NO transport
- * to actually invoke `docker exec pi-web bun cli.ts ...` from where it runs
- * today. pi-web's own HTTP API has no generic command-execution route
- * either (confirmed: it's a coding-agent session server, not a job runner).
+ * Ideally the trigger would kick off the next attempt (spawning a job-runner
+ * invocation the same way anything else does today —
+ * `docker exec pi-web bun cli.ts ...`). Investigated directly:
+ * `orchestrator/server.ts` runs inside the `pi-web-factory-orchestrator`
+ * container, a SEPARATE container from `pi-web` (the one `cli.ts` needs to
+ * run co-located inside, since a Workflow Run's git worktree/`testCmd`
+ * shell-outs are LOCAL filesystem operations — `cli.ts`'s own module doc
+ * comment). `docker/docker-compose.yml` confirms `pi-web-factory-orchestrator`'s
+ * service definition explicitly does NOT mount `/var/run/docker.sock` (its
+ * own comment: "no docker.sock, no SSH key, nothing this read-only server
+ * needs") — so this process has NO transport to actually invoke
+ * `docker exec pi-web bun cli.ts ...` from where it runs today. pi-web's own
+ * HTTP API has no generic command-execution route either (confirmed: it's a
+ * coding-agent session server, not a job runner).
  *
- * This is a real, concrete infrastructure gap, not a soft judgment call —
- * per the card's own safety instruction ("if this turns out to be broken or
- * behaves nonsensically, STOP this phase... but still land Phases 1 and 2
- * ... and the evidence-stack/decision-Role code itself, which could still be
- * invoked manually"): `planNextAttempt` below computes the FULL decision
- * (evidence stack, decision-Role call, retries-budget check, the exact next
- * `cli.ts` invocation that SHOULD run) and is fully real, tested,
- * independently invokable code — it just stops one step short of actually
- * executing that invocation across a container boundary this process cannot
- * reach. `triggerRetryIfNeeded` (the function `server.ts`'s reconciliation
- * loop actually calls) computes the plan and LOGS the command a human/future
+ * This is a real, concrete infrastructure gap, not a soft judgment call:
+ * `planNextAttempt` below computes the FULL decision (evidence stack,
+ * decision-Role call, retries-budget check, the exact next `cli.ts`
+ * invocation that SHOULD run) and is fully real, tested, independently
+ * invokable code — it just stops one step short of actually executing that
+ * invocation across a container boundary this process cannot reach.
+ * `triggerRetryIfNeeded` (the function `server.ts`'s reconciliation loop
+ * actually calls) computes the plan and LOGS the command a human/future
  * infra change would run, rather than silently no-op'ing OR unsafely
- * fabricating an exec path that doesn't exist. A future card wiring an
- * actual spawn mechanism (e.g. giving the orchestrator container docker.sock
- * access, or a small HTTP trigger endpoint inside `pi-web` itself) can swap
+ * fabricating an exec path that doesn't exist. Wiring an actual spawn
+ * mechanism (e.g. giving the orchestrator container docker.sock access, or a
+ * small HTTP trigger endpoint inside `pi-web` itself) can swap
  * `triggerRetryIfNeeded`'s logging for a real `Bun.spawn`/`docker exec` call
  * without touching `planNextAttempt`'s own logic at all.
  *
  * ── Tracking which failed runs have already been decided ─────────────────
- * The reconciliation loop runs on every sweep (M-100: startup + periodic) —
+ * The reconciliation loop runs on every sweep (startup + periodic) —
  * without a dedup marker, the SAME failed run would get a fresh decision
  * call every single sweep forever. `hasBeenDecided` checks for the
  * `retry_decision` log event `retryDecision.ts`'s `traceRetryDecision`
@@ -99,8 +94,8 @@ export type NextAttemptPlan =
  * isolation from the actual spawn question.
  *
  * `outcome: "skipped"` covers every reason this run isn't eligible for an
- * automated decision at all (no ticket_id — a pre-M-103 row; unknown
- * Workflow name — can't look up a retries budget; retries budget already
+ * automated decision at all (no ticket_id — a run predating ticket-linking;
+ * unknown Workflow name — can't look up a retries budget; retries budget already
  * exhausted by prior attempts) — a real, named outcome rather than silently
  * doing nothing, so a caller/test can distinguish "decided to give up" (the
  * decision Role's own considered judgment) from "never even asked" (this
@@ -116,7 +111,7 @@ export async function planNextAttempt(opts: {
   const { db, config, workflows, failedRun } = opts;
 
   if (!failedRun.ticketId) {
-    return { outcome: "skipped", reason: `run ${failedRun.adwId} has no ticket_id (pre-M-103 row) — cannot look up attempt history` };
+    return { outcome: "skipped", reason: `run ${failedRun.adwId} has no ticket_id (a run predating ticket-linking) — cannot look up attempt history` };
   }
   if (!failedRun.projectCwd) {
     return { outcome: "skipped", reason: `run ${failedRun.adwId} has no project_cwd recorded — cannot resume/retry against an unknown project` };
@@ -151,11 +146,10 @@ export async function planNextAttempt(opts: {
   }
 
   // Both "retry" and "new-run" always mint a brand-new adwId (verified
-  // directly against cli.ts/workflow.ts — M-103's card, Plan §5: neither
-  // path reuses the old trace row). The two differ ONLY in whether
-  // --session-id is passed: "retry" resumes the SAME pi-web session
-  // (--session-id + --project set to the OLD WORKTREE path — the real,
-  // easy-to-get-wrong usage detail the card flags); "new-run" omits
+  // directly against cli.ts/workflow.ts: neither path reuses the old trace
+  // row). The two differ ONLY in whether --session-id is passed: "retry"
+  // resumes the SAME pi-web session (--session-id + --project set to the OLD
+  // WORKTREE path — a real, easy-to-get-wrong usage detail); "new-run" omits
   // --session-id entirely, which makes runWorkflow mint a fresh session AND
   // a fresh worktree off the project's own main checkout.
   const command =

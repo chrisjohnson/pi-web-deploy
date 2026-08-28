@@ -1,11 +1,12 @@
 /**
  * retryDecision.ts: the evidence-stack assembly + retry-vs-new-run-vs-
- * give-up decision (M-103, Plan §4/§5).
+ * give-up decision.
  *
  * ── Who calls this, and when ─────────────────────────────────────────────
  * Invoked AFTER a Workflow Run is already marked terminal `status='fail'` in
  * `factory.db` (either the normal write path — `run.ts`'s `failPhase`/
- * `workflow.ts`'s catch-all — or M-100's reconciliation pass). This module
+ * `workflow.ts`'s catch-all — or the orchestrator's reconciliation pass).
+ * This module
  * reads that already-written state back OUT of the trace db via a plain
  * `bun:sqlite` handle — it does not itself run a Workflow or hold any
  * in-memory `WorkflowRunResult`, since the real caller (the orchestrator's
@@ -13,9 +14,9 @@
  * the failure) only ever has the db to go on.
  *
  * ── Evidence stack: compact, NOT raw trace events ─────────────────────────
- * Per the card's explicit instruction ("NOT raw trace events — too noisy/
- * expensive to hand a model wholesale"), `assembleEvidence` builds a small,
- * purpose-built summary: the original task prompt, the terminal failure
+ * Raw trace events are too noisy/expensive to hand a model wholesale, so
+ * `assembleEvidence` builds a small, purpose-built summary instead: the
+ * original task prompt, the terminal failure
  * reason, each Step's name/kind/status/one-line summary (never full
  * transcripts), and the ticket's full prior-attempt history (status + end
  * time per attempt, not full detail) — enough for the deciding model to
@@ -27,9 +28,8 @@
  * `decide-retry` entry) with the assembled evidence, parses its envelope
  * (`RetryDecisionOutputSchema`, envelopes.ts) into `{decision, reasoning}`.
  * This is DELIBERATELY not a hardcoded rule engine — the starting heuristics
- * from the card's Plan §5 live in the Role's own system prompt
- * (`prompts/decide-retry.md`) as guidance for the model to reason from, not
- * as branches in this TS code.
+ * live in the Role's own system prompt (`prompts/decide-retry.md`) as
+ * guidance for the model to reason from, not as branches in this TS code.
  */
 
 import { Database } from "bun:sqlite";
@@ -80,7 +80,7 @@ export interface FailedRunEvidence {
   adwId: string;
   ticketId: string;
   taskPrompt: string;
-  /** The terminal failure reason — whichever WorkflowRunResult status applies (failed/unparseable/permissions-violation/gate-failed/loop-exhausted/reconciled-per-M-100), read back from the LAST (highest-seq) Step's own error/output_summary, since that's what actually ended up in the trace db regardless of which in-memory result type produced it. */
+  /** The terminal failure reason — whichever WorkflowRunResult status applies (failed/unparseable/permissions-violation/gate-failed/loop-exhausted/reconciled-as-stuck), read back from the LAST (highest-seq) Step's own error/output_summary, since that's what actually ended up in the trace db regardless of which in-memory result type produced it. */
   failureReason: string;
   steps: StepEvidence[];
   /** Every OTHER run linked to this ticket (the current failed run excluded), most recent first — the ticket's full attempt history so far. */
@@ -97,8 +97,9 @@ export class RetryDecisionError extends Error {
 /**
  * Reads back a failed run's compact evidence stack from `factory.db`.
  * Throws `RetryDecisionError` if the run isn't found, has no ticket (every
- * run minted since M-103 always has one — a pre-M-103 row could lack one),
- * or isn't actually in a terminal-fail state — this function is meant to be
+ * run minted since ticket-linking was introduced always has one — an older
+ * row predating that could lack one), or isn't actually in a terminal-fail
+ * state — this function is meant to be
  * called only once a caller already knows the run failed (the
  * reconciliation-loop trigger checks `status='fail'` before ever getting
  * here), not as a general-purpose "is this run failed" check.
@@ -114,7 +115,7 @@ export function assembleEvidence(db: Database, adwId: string): FailedRunEvidence
     throw new RetryDecisionError(`assembleEvidence called on a run that is not status='fail' (adwId=${adwId}, status=${String(session.status)}) — only call this after a run is already confirmed terminal-failed`);
   }
   if (!session.ticket_id) {
-    throw new RetryDecisionError(`run ${adwId} has no ticket_id — cannot assemble ticket attempt history (pre-M-103 run?)`);
+    throw new RetryDecisionError(`run ${adwId} has no ticket_id — cannot assemble ticket attempt history (a run predating ticket-linking?)`);
   }
 
   const phaseRows = db
@@ -133,11 +134,12 @@ export function assembleEvidence(db: Database, adwId: string): FailedRunEvidence
   // The failure reason is whatever the LAST (highest-seq) Step actually
   // recorded — this is what's really in the db regardless of which
   // WorkflowRunResult variant (failed/unparseable/permissions-violation/
-  // gate-failed/loop-exhausted/M-100-reconciled) produced it; every one of
+  // gate-failed/loop-exhausted/reconciled-as-stuck) produced it; every one of
   // those branches writes a real phase_end with an error/output_summary
-  // (run.ts's failPhase, workflow.ts's runCodeStep/catch-all, or M-100's
-  // reconcileStuckRuns), so reading it back from the last Step is a single,
-  // uniform path rather than special-casing five result shapes here.
+  // (run.ts's failPhase, workflow.ts's runCodeStep/catch-all, or the
+  // orchestrator's reconcileStuckRuns), so reading it back from the last
+  // Step is a single, uniform path rather than special-casing five result
+  // shapes here.
   const lastStep = phaseRows.at(-1);
   const failureReason = lastStep?.error ?? lastStep?.output_summary ?? "(no failure reason recorded)";
 
