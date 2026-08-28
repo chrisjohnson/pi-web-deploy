@@ -19,14 +19,14 @@ export interface RunSummary {
   totalTokens: number;
   totalCost: number;
   archived: boolean;
-  /** M-103: the ticket this run belongs to — every run has exactly one, always. */
+  /** The ticket this run belongs to — every run has exactly one, always. */
   ticketId: string | null;
   /** Always present on `/api/runs` list responses now (batched server-side, one extra query for the whole page — see server.ts's `runsToApi`), so every grid card can render its mini-Gantt up front, not just running ones. */
   steps: Step[];
 }
 
 /**
- * M-103: one ticket, as returned by `GET /api/tickets` — the grid's
+ * One ticket, as returned by `GET /api/tickets` — the grid's
  * ticket-level card data. `latestRun` is the SAME `RunSummary` shape a bare
  * run card already renders (steps included), so the grid can reuse its
  * existing run-card markup unchanged for a ticket's latest attempt; `null`
@@ -44,7 +44,7 @@ export interface TicketSummary {
   runCount: number;
 }
 
-/** M-103: one ticket's FULL attempt history, as returned by `GET /api/tickets/:ticketId` — every linked run's complete summary (steps included), most recent first. The arrow-paging affordance's data source on both the grid card and the ticket detail page. */
+/** One ticket's FULL attempt history, as returned by `GET /api/tickets/:ticketId` — every linked run's complete summary (steps included), most recent first. The arrow-paging affordance's data source on both the grid card and the ticket detail page. */
 export interface TicketDetail {
   ticketId: string;
   filePath: string | null;
@@ -54,13 +54,13 @@ export interface TicketDetail {
 }
 
 /**
- * M-121: a completed Step's real output (branch name, commit SHA, PR link
+ * A completed Step's real output (branch name, commit SHA, PR link
  * if one was opened) — captured the moment an `agent` Step reaches SUCCESS,
  * not just at run end, so a LATER Step's failure can never erase visibility
  * into what an EARLIER Step actually accomplished. `null` on a Step that
  * never reached success (nothing was ever captured yet). `prUrl` is null
- * today — no auto-PR Step exists yet in this codebase (forward-compatible
- * slot for M-118).
+ * today — no auto-PR Step exists yet in this codebase (a forward-compatible
+ * slot for when one does).
  */
 export interface StepArtifact {
   branch: string | null;
@@ -84,7 +84,7 @@ export interface Step {
   outputTokens: number | null;
   cachedTokens: number | null;
   outputSummary: string | null;
-  /** M-121: this Step's real output (branch/commit/PR) — see StepArtifact's own doc comment. */
+  /** This Step's real output (branch/commit/PR) — see StepArtifact's own doc comment. */
   artifact: StepArtifact | null;
   startedAt: string | null;
   endedAt: string | null;
@@ -96,7 +96,7 @@ export interface RunDetail {
 }
 
 /**
- * M-105 items 5/6: one Workflow's step metadata (title/summary, authored
+ * One Workflow's step metadata (title/summary, authored
  * once in the Workflow YAML — `modules/workflowDef.ts`), as returned by
  * `GET /api/workflows`. A loop's inner steps are already flattened into
  * this SAME top-level `steps` array server-side (`server.ts`'s
@@ -146,13 +146,13 @@ export function fetchRunDetail(adwId: string): Promise<RunDetail> {
   return getJson<RunDetail>(`/api/runs/${encodeURIComponent(adwId)}`);
 }
 
-/** M-103: the grid's own data source — one row per TICKET, not per run. */
+/** The grid's own data source — one row per TICKET, not per run. */
 export function fetchTickets(project?: string | null): Promise<TicketSummary[]> {
   const query = project ? `?project=${encodeURIComponent(project)}` : "";
   return getJson<TicketSummary[]>(`/api/tickets${query}`);
 }
 
-/** M-103: one ticket's full attempt history — arrow-paging data source for both the grid card and the ticket detail page. */
+/** One ticket's full attempt history — arrow-paging data source for both the grid card and the ticket detail page. */
 export function fetchTicketDetail(ticketId: string): Promise<TicketDetail> {
   return getJson<TicketDetail>(`/api/tickets/${encodeURIComponent(ticketId)}`);
 }
@@ -161,7 +161,7 @@ export function fetchEventsSince(adwId: string, since: number): Promise<EventRec
   return getJson<EventRecord[]>(`/api/runs/${encodeURIComponent(adwId)}/events?since=${String(since)}`);
 }
 
-/** M-105 items 5/6: every loaded Workflow's own step title/summary metadata. */
+/** Every loaded Workflow's own step title/summary metadata. */
 export function fetchWorkflows(): Promise<WorkflowMeta[]> {
   return getJson<WorkflowMeta[]>("/api/workflows");
 }

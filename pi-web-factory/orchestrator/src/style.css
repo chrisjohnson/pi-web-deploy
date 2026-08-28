@@ -6,8 +6,8 @@
  * `prefers-color-scheme` exactly like pi-web's own "Auto" mode (no manual
  * toggle here; this app follows the OS/browser setting, same as pi-web).
  *
- * ── M-105 Phase A: Role colors moved to JS (palette.ts/roleColor.ts) ──────
- * Pre-M-105, per-Role colors lived here as hand-authored `--role-*` custom
+ * ── Role colors live in JS (palette.ts/roleColor.ts), not here ────────────
+ * Per-Role colors used to live here as hand-authored `--role-*` custom
  * properties (one pair per role, per theme) — every new Role/Step kind
  * meant hand-picking 4 new hex values, twice. That whole table is GONE now:
  * `roleColor.ts` computes a Role's full mini-palette (text/border/surface/
@@ -45,24 +45,24 @@
   --pi-accent: #6430d8;
   --pi-accent-border: #6430d8;
   --pi-selection-bg: #eadff8;
-  /* M-105 item 1: re-researched success/fail pair (Radix Colors' own
-     documented semantic pairing — "Success: green, teal, jade, grass,
-     mint" / "Error: red, ruby, tomato, crimson", radix-ui.com/colors —
-     fetched live during this ticket, see palette.ts's doc comment for the
-     full citation). Landed on a JADE-leaning green (cooler/softer than the
-     prior pure-green #008c58, sits better against this app's warm sand
-     background) and a RUBY-leaning red (warmer/less alarm-siren than the
-     prior #b51d23 — Chris: "I'm not attached to red or green here, I just
-     want to visually highlight failure" — still unmistakably "this
-     failed," just less jarring next to sand/tan).
+  /* Success/fail pair, re-researched against Radix Colors' own documented
+     semantic pairing — "Success: green, teal, jade, grass, mint" /
+     "Error: red, ruby, tomato, crimson", radix-ui.com/colors — fetched
+     live, see palette.ts's doc comment for the full citation. Landed on a
+     JADE-leaning green (cooler/softer than a prior pure-green #008c58,
+     sits better against this app's warm sand background) and a
+     RUBY-leaning red (warmer/less alarm-siren than a prior #b51d23 —
+     Chris: "I'm not attached to red or green here, I just want to
+     visually highlight failure" — still unmistakably "this failed," just
+     less jarring next to sand/tan).
 
-     M-105 item 1 reopened: the ruby/crimson danger red above still read as
-     PINK to Chris — hsl(346, 64%, 46%) sits in the magenta family, not the
-     red/orange one. Re-hued to a true SALMON (hsl(9, 68%, 52%) — compare
-     to the canonical salmon #fa8072's own hsl(6, 93%, 71%): same hue
-     neighborhood, tuned for this app's own saturation/lightness scale) —
-     a real hue shift (346deg -> 9deg), not just a lightness/saturation
-     tweak, per Chris's explicit ask. */
+     The ruby/crimson danger red above still read as PINK to Chris —
+     hsl(346, 64%, 46%) sits in the magenta family, not the red/orange one.
+     Re-hued to a true SALMON (hsl(9, 68%, 52%) — compare to the canonical
+     salmon #fa8072's own hsl(6, 93%, 71%): same hue neighborhood, tuned
+     for this app's own saturation/lightness scale) — a real hue shift
+     (346deg -> 9deg), not just a lightness/saturation tweak, per Chris's
+     explicit ask. */
   --pi-success: #1a8a5e;
   --pi-success-border: #1a8a5e;
   --pi-success-bg: #e3f3ea;
@@ -107,15 +107,14 @@
     --pi-accent: #7c3cff;
     --pi-accent-border: #5a47b0;
     --pi-selection-bg: #1d2547;
-    /* M-105 item 1: same jade/ruby re-research as the light theme above,
-       re-tuned for dark-theme contrast (lighter/more saturated, matching
-       this app's existing dark-theme convention of light pastel accents on
-       a near-black background).
+    /* Same jade/ruby re-research as the light theme above, re-tuned for
+       dark-theme contrast (lighter/more saturated, matching this app's
+       existing dark-theme convention of light pastel accents on a
+       near-black background).
 
-       M-105 item 1 reopened: same salmon re-hue as the light theme's
-       --pi-danger above (hue ~9deg, not the old ~347deg ruby/pink) — kept
-       at this theme's existing light/high-saturation pastel-on-dark
-       treatment. */
+       Same salmon re-hue as the light theme's --pi-danger above (hue
+       ~9deg, not the old ~347deg ruby/pink) — kept at this theme's
+       existing light/high-saturation pastel-on-dark treatment. */
     --pi-success: #3ee0a0;
     --pi-success-border: #3ee0a0;
     --pi-success-bg: #071e19;
@@ -252,10 +251,9 @@ a.back-link:hover {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  /* M-105 item 15: halved from 0.32 (~32% opacity) per Chris's ask ("don't
-     dim completed cards as much... probably half of the current dim
-     percentage") — still dims completed cards to read as inactive, just
-     more softly. */
+  /* Halved from 0.32 (~32% opacity) per Chris's ask ("don't dim completed
+     cards as much... probably half of the current dim percentage") —
+     still dims completed cards to read as inactive, just more softly. */
   background: rgba(0, 0, 0, 0.16);
   pointer-events: none;
   transition: opacity 0.15s ease;
@@ -291,7 +289,7 @@ a.back-link:hover {
   justify-content: space-between;
 }
 
-/* M-105 item 13: on the DETAIL page (not the grid card — that's the plain
+/* On the DETAIL page (not the grid card — that's the plain
    flex row above, reused inside `.mini-gantt`'s card context too), the title
    row becomes a full-bleed colored banner strip — same status-surface colors
    the GRID page already uses for a whole card's background
@@ -325,7 +323,7 @@ a.back-link:hover {
   background: var(--pi-border-muted);
 }
 
-/* M-105 item 13: the status text itself, sized to match the other
+/* The status text itself, sized to match the other
    prominent elements Chris already approved on this page (the "Steps"
    heading / duration number both sit at 17-20px — see `.timeline-wrap h2`/
    `.timeline-duration` below) instead of the tiny 11px uppercase pill used
@@ -452,7 +450,7 @@ a.back-link:hover {
 
 /* ── detail view ───────────────────────────────────────────────────────── */
 
-/* M-105 item 13: `.run-detail-header` itself no longer carries padding —
+/* `.run-detail-header` itself no longer carries padding —
    it's now just the rounded-corner clipping frame for two independently-
    backgrounded child sections: `.run-card-top` (the full-bleed colored
    status banner, edge-to-edge with the card's own rounded corners) and
@@ -506,7 +504,7 @@ a.back-link:hover {
   color: var(--pi-text);
   max-height: 260px;
   overflow-y: auto;
-  /* M-105 item 10: this page polls and re-renders live — content height
+  /* This page polls and re-renders live — content height
      fluctuating right around `max-height` was flickering the scrollbar
      gutter in/out on every re-render (`overflow-y: auto` only reserves
      gutter space once content genuinely overflows). `scrollbar-gutter:
@@ -523,13 +521,13 @@ a.back-link:hover {
   border: 1px solid var(--pi-border);
   border-radius: 10px;
   padding: 18px;
-  /* M-105 item 11: the track is now computed to FIT this box's own content
+  /* The track is now computed to FIT this box's own content
      width (gantt.ts's dynamic px/s scale, driven by detailView.ts's
      `timelineWidthPx()`) — no horizontal scroll should ever be needed, so
      the old `overflow-x: auto` escape valve is gone. */
 }
 
-/* M-105 item 11 follow-up: heading + duration share one row, duration
+/* Heading + duration share one row, duration
    pinned to the far right — Chris, verbatim: "Pin the time over to the
    right like how the status badge is," mirroring `.run-card-top`'s own
    flex space-between layout (heading/title left, status pill right) one
@@ -551,7 +549,7 @@ a.back-link:hover {
   margin: 0;
 }
 
-/* M-105 item 11: the run's overall duration, relocated here from the old
+/* The run's overall duration, relocated here from the old
    top `.run-meta` line — Chris, verbatim: "highlight that duration by
    making it a larger font." Anchors what the width-scaled Gantt track
    below visually represents.
@@ -613,7 +611,7 @@ a.back-link:hover {
   animation: pulse-border 1.2s ease-in-out infinite;
 }
 
-/* M-105 item 3: the currently-hovered/displayed Step's bar gets a subtle
+/* The currently-hovered/displayed Step's bar gets a subtle
    outline ring — the ONLY visual cue on the bar itself that it's "the one
    the panel below is currently showing" (hover-to-switch has no click/
    selected state otherwise, so this is what tells a human which bar they're
@@ -625,11 +623,11 @@ a.back-link:hover {
   box-shadow: 0 0 0 2px var(--pi-accent);
 }
 
-/* M-105 items 3/4: the detail panel is now a real color-tinted BOX (border +
+/* The detail panel is now a real color-tinted BOX (border +
    background from the displayed Step's own Role mini-palette, set inline by
    detailView.ts's `stepDetailHtml`) rather than a plain top-border strip —
-   and it no longer leads with a redundant title+role-pill header (item 4,
-   Chris explicit: "ditch the title and pill and just do the timebars") —
+   and it no longer leads with a redundant title+role-pill header (Chris
+   explicit: "ditch the title and pill and just do the timebars") —
    the Gantt bars above already carry Role identity via color + label, and
    this panel's own background now ALSO carries it, so a written-out repeat
    here would be the third redundant copy Chris called out, not a second. */
@@ -670,7 +668,7 @@ a.back-link:hover {
   gap: 4px;
   max-height: 220px;
   overflow-y: auto;
-  /* M-105 item 10: same live-poll scrollbar-flicker fix as `.run-prompt-text`
+  /* Same live-poll scrollbar-flicker fix as `.run-prompt-text`
      above — see that rule's own comment for the full reasoning. */
   scrollbar-gutter: stable;
 }
@@ -733,9 +731,9 @@ a.back-link:hover {
   color: var(--pi-danger);
 }
 
-/* ── M-121: failed-run artifact banner ────────────────────────────────────
+/* ── failed-run artifact banner ────────────────────────────────────────────
    A dedicated summary of earlier Steps' real output (branch/commit/PR) on a
-   FAILED run's detail view — the card's own motivating incident: a build
+   FAILED run's detail view — the motivating incident: a build
    Step's real pushed work stayed invisible when the following review Step's
    timeout failed the whole run. Deliberately calm/informational (a soft
    warning tint, not the harsher --pi-danger red) — this is GOOD news inside
@@ -763,7 +761,7 @@ a.back-link:hover {
   font-size: 11.5px;
 }
 
-/* ── M-103: attempt-navigation arrows ─────────────────────────────────────
+/* ── attempt-navigation arrows ────────────────────────────────────────────
    Chris, explicit: "subtle arrow icons, not big fat buttons" — small,
    low-contrast by default, only picking up real color on hover/focus so
    they read as a secondary affordance next to the card's own status pill,
