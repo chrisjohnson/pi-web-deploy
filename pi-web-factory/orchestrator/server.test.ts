@@ -30,7 +30,7 @@ const ADW_ID_PROJECT_B = "adw_servertest02";
 const ADW_ID_PROJECT_B_2 = "adw_servertest03";
 const PROJECT_B_CWD = "/tmp/other-project";
 
-// Realistic per-run worktree paths (M-071: every Workflow Run gets its OWN
+// Realistic per-run worktree paths (every Workflow Run gets its OWN
 // worktree) against the SAME project root — the actual real-world shape
 // that exposed a real bug live 2026-08-05: naive grouping/filtering by the
 // raw project_cwd column treated these as two unrelated one-run "projects"
@@ -41,7 +41,7 @@ const PROJECT_ROOT_CWD = "/tmp/pi-web-factory-realproject";
 const WORKTREE_CWD_1 = `${PROJECT_ROOT_CWD}/.pi-web-factory-worktrees/${ADW_ID_WORKTREE_1}`;
 const WORKTREE_CWD_2 = `${PROJECT_ROOT_CWD}/.pi-web-factory-worktrees/${ADW_ID_WORKTREE_2}`;
 
-// M-103: a two-attempt ticket (same ticket_id, two runs) + a single-attempt
+// A two-attempt ticket (same ticket_id, two runs) + a single-attempt
 // ticket, seeded via Tracer.sessionStart's real ticketId wiring (not a raw
 // INSERT into `tickets` — exercises the same code path a real cli.ts run
 // would) — the `/api/tickets`/`/api/tickets/:ticketId` tests below need
@@ -87,7 +87,7 @@ function seed(): void {
   tracer.sessionStart(ADW_ID_WORKTREE_2, { engineer: "test", projectCwd: WORKTREE_CWD_2, adwName: "bounded-build-review" });
   tracer.sessionSetTitle(ADW_ID_WORKTREE_2, "real project run 2");
 
-  // M-103: two runs sharing ONE ticket (a manual retry under the same
+  // Two runs sharing ONE ticket (a manual retry under the same
   // --ticket-id) — the second attempt is the LATEST (started later).
   tracer.sessionStart(ADW_ID_ATTEMPT_1, {
     engineer: "test",
@@ -236,7 +236,7 @@ describe("orchestrator server (real spawned process, real HTTP)", () => {
 
   test("GET /api/runs (list endpoint) also includes each run's Steps, batched — not just the detail endpoint", async () => {
     // Regression coverage for the grid needing every card's Steps up front
-    // (M-090 follow-up, 2026-08-05): the list route used to return bare
+    // (2026-08-05): the list route used to return bare
     // run summaries, forcing a per-card detail fetch to paint a mini-Gantt.
     const res = await fetch(`${baseUrl}/api/runs`);
     const runs = (await res.json()) as Array<{ adwId: string; steps: Array<{ name: string; role: string }> }>;
@@ -288,10 +288,10 @@ describe("orchestrator server (real spawned process, real HTTP)", () => {
     expect(text).toContain("pi-web-factory orchestrator");
   });
 
-  test("M-100 Fix 2: reconciliation is wired up — startup pass runs against a real spawned server without crashing it", async () => {
+  test("reconciliation is wired up — startup pass runs against a real spawned server without crashing it", async () => {
     // Full behavioral coverage (stale row -> fail, fresh row untouched,
     // live-vs-dead session cross-check) lives in the dedicated
-    // "reconciliation pass (M-100 Fix 2)" describe block below, against its
+    // "reconciliation pass" describe block below, against its
     // own scratch db/server instance with a controlled staleness threshold
     // and a stubbed pi-web. This test just confirms the already-running
     // shared server instance (this describe block's own beforeAll) didn't
@@ -303,7 +303,7 @@ describe("orchestrator server (real spawned process, real HTTP)", () => {
     expect(res.status).toBe(200);
   });
 
-  // ── M-103: /api/tickets, /api/tickets/:ticketId ─────────────────────────
+  // ── /api/tickets, /api/tickets/:ticketId ─────────────────────────────────
 
   test("GET /api/tickets returns one row per TICKET, not per run — a two-attempt ticket is ONE row", async () => {
     const res = await fetch(`${baseUrl}/api/tickets`);
@@ -392,7 +392,7 @@ describe("orchestrator server (real spawned process, real HTTP)", () => {
   });
 });
 
-// ── M-100 Fix 2: reconciliation pass ────────────────────────────────────
+// ── Reconciliation pass ───────────────────────────────────────────────────
 //
 // Its own dedicated scratch db + spawned server instance (distinct port,
 // distinct db, distinct env) so the staleness threshold
@@ -409,7 +409,7 @@ const STALE_PROJECT_CWD = "/tmp/reconcile-test-stale-project";
 const FRESH_PROJECT_CWD = "/tmp/reconcile-test-fresh-project";
 const NO_SESSION_PROJECT_CWD = "/tmp/reconcile-test-no-session-project";
 
-describe("reconciliation pass (M-100 Fix 2)", () => {
+describe("reconciliation pass", () => {
   let reconcileDir: string;
   let reconcileDbPath: string;
   let reconcileProc: ReturnType<typeof Bun.spawn>;
@@ -466,8 +466,8 @@ describe("reconciliation pass (M-100 Fix 2)", () => {
 
     // A row that's fresh (would NOT trip the staleness proxy) but whose
     // project pi-web reports zero live sessions for — proving condition 1
-    // alone is also independently sufficient, exactly the real-world M-100
-    // scenario (the two real stuck rows on the box: fresh-looking, but
+    // alone is also independently sufficient, exactly the real-world
+    // scenario that motivated this pass (fresh-looking stuck rows with
     // provably no live pi-web session).
     tracer.sessionStart(NO_SESSION_ADW_ID, { engineer: "test", projectCwd: NO_SESSION_PROJECT_CWD, adwName: "test-workflow" });
     tracer.phaseUpsert({
@@ -566,7 +566,7 @@ describe("reconciliation pass (M-100 Fix 2)", () => {
   });
 });
 
-// ── M-103 Phase 3: retry-trigger wiring smoke test ─────────────────────────
+// ── Retry-trigger wiring smoke test ─────────────────────────────────────────
 //
 // PI_WEB_FACTORY_ORCHESTRATOR_RETRY_TRIGGER=1 turns the trigger pass ON (it's
 // off by default — see server.ts's own doc comment on RETRY_TRIGGER_ENABLED,
@@ -578,7 +578,7 @@ describe("reconciliation pass (M-100 Fix 2)", () => {
 // crash the server / break the ordinary read API it lives alongside"), not
 // a test of the decision logic itself (covered directly in
 // modules/retryTrigger.test.ts against a real db).
-describe("retry-trigger wiring (M-103 Phase 3, opt-in flag)", () => {
+describe("retry-trigger wiring (opt-in flag)", () => {
   let dir: string;
   let triggerDbPath: string;
   let proc: ReturnType<typeof Bun.spawn>;
@@ -633,30 +633,30 @@ describe("retry-trigger wiring (M-103 Phase 3, opt-in flag)", () => {
   });
 });
 
-// ── M-121 hotfix: server.ts's own startup migration against an EXISTING,
+// ── server.ts's own startup migration against an EXISTING,
 // old-shape db file ─────────────────────────────────────────────────────
 //
 // Direct regression for a real production incident: server.ts previously
 // only ran schema/migration setup inside an `if (!existsSync(DB_PATH))`
 // bootstrap-a-brand-new-db block — a no-op against a db file that already
 // exists, which every real production factory.db does. `runMigrations`
-// (added earlier in M-121 for `Tracer`'s own constructor) never ran for
+// (added earlier for `Tracer`'s own constructor) never ran for
 // this process at all as a result, so every route reading a column added
 // after the db's original creation (phases.artifact_json) threw `SQLiteError:
 // no such column: artifact_json` in production — confirmed live via
 // `docker logs pi-web-factory-orchestrator`.
 //
-// This suite seeds its OWN db file by hand, in the OLD (pre-M-121) shape —
-// deliberately NOT via `Tracer` (which already creates the column fresh via
-// its own `ensureSchemaCurrent` call, exactly the blind spot that let the
-// original bug in `Tracer`'s own code ship unnoticed — see schema.test.ts's
-// and tracer.test.ts's own comments on this same class of gap) — then spawns
-// the REAL server.ts binary against that pre-existing file, exactly
-// replicating "an already-deployed production db, then a fresh process
-// restart" rather than "a brand-new db, first ever run."
+// This suite seeds its OWN db file by hand, in the OLD shape (predating the
+// artifact_json migration) — deliberately NOT via `Tracer` (which already
+// creates the column fresh via its own `ensureSchemaCurrent` call, exactly
+// the blind spot that let the original bug in `Tracer`'s own code ship
+// unnoticed — see schema.test.ts's and tracer.test.ts's own comments on this
+// same class of gap) — then spawns the REAL server.ts binary against that
+// pre-existing file, exactly replicating "an already-deployed production db,
+// then a fresh process restart" rather than "a brand-new db, first ever run."
 const MIGRATION_HOTFIX_TEST_PORT = 8793;
 
-describe("orchestrator server — M-121 hotfix: startup schema migration against an existing old-shape db", () => {
+describe("orchestrator server — startup schema migration against an existing old-shape db", () => {
   let migrationDir: string;
   let migrationDbPath: string;
   let migrationProc: ReturnType<typeof Bun.spawn>;
@@ -667,7 +667,7 @@ describe("orchestrator server — M-121 hotfix: startup schema migration against
     migrationDir = mkdtempSync(join(tmpdir(), "pi-web-factory-orchestrator-migration-test-"));
     migrationDbPath = join(migrationDir, "factory.db");
 
-    // Hand-built OLD (pre-M-121) shape — no phases.artifact_json column —
+    // Hand-built OLD shape — no phases.artifact_json column —
     // mirroring a real, already-deployed production db exactly, NOT built
     // via Tracer (see this section's own header comment for why).
     const seedDb = new Database(migrationDbPath, { create: true });
@@ -785,8 +785,7 @@ describe("orchestrator server — M-121 hotfix: startup schema migration against
 // the real compose file (not a fixture) so it fails again the moment either
 // service's value drifts, whichever direction.
 describe("docker-compose.yml — PI_WEB_FACTORY_STEP_TIMEOUT_MS deployment-config drift guard", () => {
-  // M-134: this repo's own docker-compose.yml now lives at the repo root
-  // (was local-ai-machine's docker/docker-compose.yml pre-extraction).
+  // This repo's own docker-compose.yml lives at the repo root.
   const composePath = join(import.meta.dir, "..", "..", "docker-compose.yml");
 
   function stepTimeoutForService(composeYaml: string, serviceName: string): string | undefined {
@@ -797,7 +796,7 @@ describe("docker-compose.yml — PI_WEB_FACTORY_STEP_TIMEOUT_MS deployment-confi
     const nextServiceMatch = /\n {2}\S/.exec(composeYaml.slice(serviceStart + 1));
     const serviceEnd = nextServiceMatch ? serviceStart + 1 + nextServiceMatch.index : composeYaml.length;
     const block = composeYaml.slice(serviceStart, serviceEnd);
-    // M-134: captures the raw value, not just literal digits — both
+    // Captures the raw value, not just literal digits — both
     // services now reference the same ${PI_WEB_FACTORY_STEP_TIMEOUT_MS:-...}
     // env var expression (see docker-compose.yml), which structurally
     // can't drift, but a literal override in one and not the other should
