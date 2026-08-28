@@ -1,25 +1,25 @@
 #!/usr/bin/env bun
 /**
  * orchestrator/server.ts: read-only HTTP server for pi-web-factory's trace db
- * (M-077, pi-web-adw-design.md §7.4).
+ * (pi-web-adw-design.md §7.4).
  *
  * Serves both the JSON read API (`/api/...`) AND the bundled frontend
  * (`orchestrator/src/index.html` + its imported `.ts`/`.css`, bundled on the
  * fly by `Bun.serve`'s HTML-import routes — no separate build step, no
  * Vite/Vue dependency added to this project's `package.json`) from ONE
- * `Bun.serve` process, per the card's brief ("one process to run").
+ * `Bun.serve` process — one process to run.
  *
  * ── Read-only, always (for the read API) ────────────────────────────────
  * Opens `factory.db` with `{ readonly: true }` (bun:sqlite) for every route
  * below — this process NEVER writes to the trace db through the read API,
- * confirmed live (see this file's own companion test / the M-077 card's
- * decision log): `bun:sqlite` throws "attempt to write a readonly database"
+ * confirmed live (see this file's own companion test):
+ * `bun:sqlite` throws "attempt to write a readonly database"
  * on any write attempt against a readonly-opened handle, which is exactly
  * the safety property wanted here (the read API must never be able to
  * corrupt or race the real writer, `Tracer`, used by `cli.ts`/live Workflow
  * Runs).
  *
- * ── M-100 Fix 2: one deliberate exception, its own separate handle ───────
+ * ── One deliberate exception, its own separate handle ─────────────────────
  * The reconciliation pass (below, `reconcileStuckRuns`) is a genuine,
  * intentional writer: it marks orphaned `phases`/`sessions` rows `'fail'`
  * when a job runner died without ever getting to write its own terminal
@@ -63,7 +63,7 @@ import { loadedWorkflows } from "../chains/registry.ts";
 import index from "./src/index.html";
 
 /**
- * Every Workflow Run gets its OWN git worktree (M-071), so `sessions.
+ * Every Workflow Run gets its OWN git worktree, so `sessions.
  * project_cwd` is actually `<projectRoot>/.pi-web-factory-worktrees/<adwId>`
  * — a value that's UNIQUE per run, never shared across runs against the
  * same project. Confirmed live (2026-08-05): filtering by the raw, unique
@@ -83,14 +83,14 @@ const DEFAULT_DB_PATH = join(import.meta.dir, "..", "factory.db");
 const DB_PATH = process.env["PI_WEB_FACTORY_ORCHESTRATOR_DB_PATH"] ?? DEFAULT_DB_PATH;
 const PORT = Number(process.env["PI_WEB_FACTORY_ORCHESTRATOR_PORT"] ?? 8090);
 
-// M-121 (2026-08-17 hotfix): ALWAYS open a brief writable connection and
+// Confirmed 2026-08-17: ALWAYS open a brief writable connection and
 // run `ensureSchemaCurrent` (schema.ts's `SCHEMA` + `runMigrations`) —
-// unconditionally, not gated behind "does factory.db exist yet." The
+// unconditionally, not gated behind "does factory.db exist yet." A
 // previous version only did this inside an `if (!existsSync(DB_PATH))`
 // bootstrap-a-brand-new-db block, which is a no-op against the real
 // production db (it already exists) — so `runMigrations` never ran for
 // this process at all, and every route reading a column added after this
-// db file's creation (e.g. M-121's own `phases.artifact_json`) 500'd in
+// db file's creation (e.g. `phases.artifact_json`) 500'd in
 // production as a direct, confirmed-live result (`SQLiteError: no such
 // column: artifact_json`). `ensureSchemaCurrent`'s `SCHEMA` half is already
 // idempotent (`CREATE TABLE IF NOT EXISTS`) and its `runMigrations` half
@@ -113,15 +113,15 @@ const PORT = Number(process.env["PI_WEB_FACTORY_ORCHESTRATOR_PORT"] ?? 8090);
 const db = new Database(DB_PATH, { readonly: true });
 db.run("PRAGMA busy_timeout=5000;");
 
-// ── M-100 Fix 2: reconciliation pass ───────────────────────────────────────
+// ── Reconciliation pass ─────────────────────────────────────────────────────
 //
-// Fix 1 (workflow.ts's `runWorkflow` catch-all) only covers a job runner
-// process that gets the chance to unwind its own stack (an uncaught JS
-// exception). It does NOT cover SIGKILL, OOM-kill, a container recreate
-// killing the `docker exec` process mid-run, or a host reboot — none of
-// which give JS a chance to run a `catch` block at all. Those leave a
-// `phases`/`sessions` row stuck at `status='running'` forever, with nothing
-// in the codebase ever revisiting it (M-100's Decision log: confirmed zero
+// The write-path catch-all (workflow.ts's `runWorkflow` catch-all) only
+// covers a job runner process that gets the chance to unwind its own stack
+// (an uncaught JS exception). It does NOT cover SIGKILL, OOM-kill, a
+// container recreate killing the `docker exec` process mid-run, or a host
+// reboot — none of which give JS a chance to run a `catch` block at all.
+// Those leave a `phases`/`sessions` row stuck at `status='running'` forever,
+// with nothing in the codebase ever revisiting it otherwise (confirmed: zero
 // prior reconciliation/staleness logic anywhere). This pass is the general
 // fix for that whole class: it runs OUTSIDE the (possibly dead) job-runner
 // process, from the one long-lived process in this system that already owns
@@ -144,10 +144,10 @@ reconcileDb.run("PRAGMA busy_timeout=5000;");
 /**
  * Staleness threshold for "no active runner" (condition 2 below) — reused
  * directly from `piwebClient.ts`'s `PI_WEB_FACTORY_STEP_TIMEOUT_MS`
- * (`DEFAULT_WAIT_FOR_COMPLETION_TIMEOUT_MS`, M-094's own wait-loop timeout)
+ * (`DEFAULT_WAIT_FOR_COMPLETION_TIMEOUT_MS`, the same wait-loop timeout)
  * rather than inventing a second env var/constant for what's conceptually
  * the same question — "how long is too long for a Step to still genuinely
- * be in flight." M-100's card explicitly calls for reusing this constant.
+ * be in flight."
  */
 const RECONCILE_STALE_MS = DEFAULT_WAIT_FOR_COMPLETION_TIMEOUT_MS;
 
@@ -163,7 +163,7 @@ const RECONCILE_INTERVAL_MS = (() => {
 /** Base URL for the pi-web instance whose live session list this pass cross-checks against — same env var / default `piwebClient.ts` itself uses, so this pass talks to the same pi-web the job runner does. */
 const PIWEB_BASE_URL = process.env["PI_WEB_FACTORY_BASE_URL"] ?? DEFAULT_BASE_URL;
 
-// ── M-103: retry-decision trigger (Phase 3) ────────────────────────────────
+// ── Retry-decision trigger ──────────────────────────────────────────────────
 //
 // Opt-in via PI_WEB_FACTORY_ORCHESTRATOR_RETRY_TRIGGER=1 — deliberately OFF by
 // default. `retryTrigger.ts`'s own module header has the full story: the
@@ -177,7 +177,7 @@ const PIWEB_BASE_URL = process.env["PI_WEB_FACTORY_BASE_URL"] ?? DEFAULT_BASE_UR
 const RETRY_TRIGGER_ENABLED = process.env["PI_WEB_FACTORY_ORCHESTRATOR_RETRY_TRIGGER"] === "1";
 const FACTORY_CONFIG_PATH = process.env["PI_WEB_FACTORY_CONFIG"] ?? join(import.meta.dir, "..", "factory.config.yaml");
 
-// ── M-115: stale project-registration reconciliation is CLI-only, NOT wired ──
+// ── Stale project-registration reconciliation is CLI-only, NOT wired ───────
 // ── into this process's periodic sweep ──────────────────────────────────────
 //
 // Deliberately NOT run from here, even opt-in — this container
@@ -188,21 +188,21 @@ const FACTORY_CONFIG_PATH = process.env["PI_WEB_FACTORY_CONFIG"] ?? join(import.
 // staleness check (`existsSync(project.path)`) runs against the CALLING
 // process's own filesystem — from inside THIS container, every real,
 // actively-in-use project registered under `/work/...` (which is every
-// legitimate project, per M-109's own durable-mount guard) would resolve
+// legitimate project, per the durable-mount guard) would resolve
 // `existsSync('/work/...')` as `false` unconditionally, always, not as a rare
 // race — flagging every real project stale and (with both opt-ins set)
-// deleting it. That reproduces exactly the "self-inflicted mass deletion"
-// failure this whole card exists to prevent, at the infrastructure level —
-// found in review before this ever shipped enabled. `bun cli.ts
-// --reconcile-projects` (cli.ts) is the only reconciliation entry point:
-// it's always invoked via `docker exec pi-web bun cli.ts ...` (every other
-// call site in this codebase — `retryTrigger.ts`'s own module header,
-// `planBuildTest.integration.test.ts`, etc. — confirms this), i.e. inside
-// the `jmfederico-pi-web` container, which DOES have `/work` mounted and can
-// therefore make a real, non-vacuous existsSync check. A future change
-// giving this container its own read-only `/work` mount could revisit
-// wiring a periodic pass back in here — not done now, since it would need
-// its own infra change and re-verification, out of scope for this fix.
+// deleting it. That would reproduce exactly the "self-inflicted mass
+// deletion" failure this whole mechanism exists to prevent, at the
+// infrastructure level — found in review before this ever shipped enabled.
+// `bun cli.ts --reconcile-projects` (cli.ts) is the only reconciliation
+// entry point: it's always invoked via `docker exec pi-web bun cli.ts ...`
+// (every other call site in this codebase — `retryTrigger.ts`'s own module
+// header, `planBuildTest.integration.test.ts`, etc. — confirms this), i.e.
+// inside the `jmfederico-pi-web` container, which DOES have `/work` mounted
+// and can therefore make a real, non-vacuous existsSync check. A future
+// change giving this container its own read-only `/work` mount could
+// revisit wiring a periodic pass back in here — not done now, since it
+// would need its own infra change and re-verification.
 
 interface StaleCandidateRow {
   phase_id: string;
@@ -216,7 +216,7 @@ interface StaleCandidateRow {
 
 /**
  * `GET /sessions?cwd=<cwd>` against pi-web directly — the same manual check
- * used throughout M-100's investigation (`curl
+ * used for live investigation (`curl
  * 'http://localhost:8080/api/sessions?cwd=<project>'`). No typed helper for
  * this exists yet in `piwebClient.ts` (every existing helper there operates
  * on an already-known session id, not a cwd-based lookup) — kept narrow and
@@ -243,9 +243,8 @@ async function hasLiveSession(cwd: string): Promise<boolean> {
 /**
  * One reconciliation sweep: scans `phases` rows still `status='running'`
  * and marks the ones that meet either of two INDEPENDENT, individually-
- * definitive conditions as `'fail'` — a logical OR, not an AND (M-100's
- * card, "Refinement, 2026-08-07" section, is explicit that Chris corrected
- * an earlier AND-based draft to this OR-based version):
+ * definitive conditions as `'fail'` — a logical OR, not an AND (Chris
+ * corrected an earlier AND-based draft to this OR-based version, 2026-08-07):
  *
  *   1. **No active session**: pi-web's own `GET /sessions?cwd=<project>`
  *      returns no live session for the row's project. Definitive on its
@@ -323,7 +322,7 @@ async function reconcileStuckRuns(): Promise<{ scanned: number; markedFailed: nu
 }
 
 /**
- * M-103 Phase 3: after each reconciliation sweep, check every currently-
+ * After each reconciliation sweep, check every currently-
  * undecided `status='fail'` run for a retry decision. Runs on the SAME
  * `reconcileDb` read-write handle reconciliation already uses (both are the
  * one deliberate writer this process has — module header comment on
@@ -372,11 +371,11 @@ async function runReconciliationSweep(label: string): Promise<void> {
   } catch (error) {
     console.error(`[orchestrator] reconciliation (${label}) failed:`, error);
   }
-  // M-103: retry-trigger check runs AFTER reconciliation, in the same sweep —
+  // Retry-trigger check runs AFTER reconciliation, in the same sweep —
   // a run reconciliation just marked failed is immediately eligible, no need
   // to wait for the next cadence.
   await runRetryTriggerPass();
-  // M-115's stale-project-registration reconciliation deliberately does NOT
+  // Stale-project-registration reconciliation deliberately does NOT
   // run from here — see this file's own "stale project-registration
   // reconciliation is CLI-only" comment above (this container has no /work
   // mount, so a filesystem-existence check from here would be permanently
@@ -384,8 +383,8 @@ async function runReconciliationSweep(label: string): Promise<void> {
   // entry point.
 }
 
-// Runs once on startup, per M-100's explicit "on startup, IN ADDITION TO
-// periodic" requirement — fire-and-forget (top-level await would block the
+// Runs once on startup, IN ADDITION TO periodic —
+// fire-and-forget (top-level await would block the
 // server from listening; this pass is allowed to finish after routes are
 // already serving).
 void runReconciliationSweep("startup");
@@ -412,7 +411,7 @@ interface SessionRow {
   ticket_id: string | null;
 }
 
-/** M-103: one `tickets` row — the grid/detail ticket-level grouping anchor. */
+/** One `tickets` row — the grid/detail ticket-level grouping anchor. */
 interface TicketRow {
   ticket_id: string;
   file_path: string | null;
@@ -447,7 +446,7 @@ interface PhaseRow {
 }
 
 /**
- * M-121: a completed Step's real output (branch/commit/PR) — see
+ * A completed Step's real output (branch/commit/PR) — see
  * schema.ts's own module header for the full "why". Parsed defensively
  * (`safeParseJson`, already used elsewhere in this file for event payloads)
  * since `artifact_json` is a plain TEXT column with no DB-level schema
@@ -492,7 +491,7 @@ interface EventRow {
  * Steps for that run. Kept as a real field (not optional) on the return
  * type so the frontend's `RunSummary` type can rely on it always being
  * present, matching the spec's "every card shows its mini-Gantt, not just
- * running ones" requirement (found missing in review, M-090 follow-up) —
+ * running ones" requirement (found missing in review) —
  * a card can't render anything without knowing its Steps up front, and a
  * dedicated per-card fetch for every non-running card would mean N extra
  * round trips just to paint the initial page, which is exactly the kind of
@@ -515,7 +514,7 @@ function runToApi(r: SessionRow, steps: ReturnType<typeof stepToApi>[] = []) {
     totalTokens: r.total_tokens,
     totalCost: r.total_cost,
     archived: Boolean(r.archived),
-    /** M-103: the ticket this run belongs to — every run has exactly one, always (see modules/ticket.ts). */
+    /** The ticket this run belongs to — every run has exactly one, always (see modules/ticket.ts). */
     ticketId: r.ticket_id,
     steps,
   };
@@ -568,7 +567,7 @@ function stepToApi(r: PhaseRow) {
     outputTokens: r.output_tokens,
     cachedTokens: r.cached_tokens,
     outputSummary: r.output_summary,
-    /** M-121: this Step's real output (branch/commit/PR) — null until the Step reaches success, per workflow.ts's runAgentStep. Survives a LATER Step's failure (the whole point of this field — see schema.ts's module header). */
+    /** This Step's real output (branch/commit/PR) — null until the Step reaches success, per workflow.ts's runAgentStep. Survives a LATER Step's failure (the whole point of this field — see schema.ts's module header). */
     artifact: stepArtifactToApi(r.artifact_json),
     startedAt: r.started_at,
     endedAt: r.ended_at,
@@ -576,7 +575,7 @@ function stepToApi(r: PhaseRow) {
 }
 
 /**
- * M-103: one ticket, ready for the grid — its own fields plus its LATEST
+ * One ticket, ready for the grid — its own fields plus its LATEST
  * run's full summary (reusing `runToApi`'s shape unchanged, steps and all,
  * so the grid's ticket-level card can render the exact same mini-Gantt/
  * status-pill markup it already does for a bare run — see
@@ -659,7 +658,7 @@ function json(data: unknown, init?: ResponseInit): Response {
 }
 
 /**
- * M-105 items 5/6: `title`/`summary` are authored ONCE in a Workflow's YAML
+ * `title`/`summary` are authored ONCE in a Workflow's YAML
  * definition (`modules/workflowDef.ts`), never per-run — so they're NOT
  * trace-db columns (a `phases` row is per-RUN data). Instead, this endpoint
  * exposes every loaded Workflow's own step metadata (name/title/summary),
@@ -760,7 +759,7 @@ const server = Bun.serve({
       },
     },
 
-    // ── GET /api/tickets — ticket-level grid data (M-103) ──────────────────
+    // ── GET /api/tickets — ticket-level grid data ───────────────────────────
     //
     // One row per ticket, each carrying its LATEST run's full summary
     // (`ticketsToApi`, above) — the grid's cards are ticket-level now (card
@@ -820,7 +819,7 @@ const server = Bun.serve({
     },
 
     // ── GET /api/workflows — every loaded Workflow's step title/summary
-    // metadata (M-105 items 5/6), for the detail page to resolve a Step's
+    // metadata, for the detail page to resolve a Step's
     // human-friendly title/summary by (run.adwName, step.name) — see
     // `workflowsToApi`'s own doc comment above for the full reasoning.
     "/api/workflows": {
