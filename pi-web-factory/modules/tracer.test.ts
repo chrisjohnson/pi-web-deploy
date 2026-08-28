@@ -266,12 +266,12 @@ describe("Tracer", () => {
   });
 });
 
-// ── M-074: schema/terminology migration coverage ──────────────────────────
+// ── Terminology migration: schema additions coverage ───────────────────────
 // SQL table/column names stay `sessions`/`phases`/`owner` (see schema.ts's
 // and tracer.ts's header comments — the rename is TS-level only), so these
 // tests still query those physical names directly; what's new is the
 // columns themselves and the `role`-named TS call sites that populate them.
-describe("Tracer — M-074 schema additions", () => {
+describe("Tracer — schema additions", () => {
   test("sessions.title is a new, nullable column, settable via sessionSetTitle", () => {
     const adwId = "adw_title001";
     tracer.sessionStart(adwId, { projectCwd: "/tmp/proj" });
@@ -342,7 +342,7 @@ describe("Tracer — M-074 schema additions", () => {
     expect(stepRow?.cached_tokens).toBe(50);
 
     // additive, not a replacement — sessions.total_tokens still accumulates
-    // exactly as it did before M-074.
+    // the same as before.
     const sessionRow = tracer.db
       .query<{ total_tokens: number }, [string]>("select total_tokens from sessions where adw_id=?")
       .get(adwId);
@@ -355,7 +355,7 @@ describe("Tracer — M-074 schema additions", () => {
     // against was real: agent_end's side effect used to hardcode
     // `status: "running"` unconditionally, which would have silently reverted
     // an already-terminal Step back to non-terminal if a future caller (e.g.
-    // M-076's generic Workflow interpreter) ever emitted these two events in
+    // the generic Workflow interpreter) ever emitted these two events in
     // the other order. Simulate that other order directly here.
     const adwId = "adw_order001";
     const phaseId = "phase_order_test";
@@ -487,7 +487,7 @@ describe("Tracer — stepArtifact", () => {
     tracer.stepArtifact(phaseId, { branch: "pi-web-factory/adw_artifact_coalesce", commitSha: "def456", prUrl: null });
 
     // A later phaseUpsert on the SAME phaseId that doesn't pass artifactJson
-    // (e.g. the M-074 agent_end token-column upsert) must not blank it out.
+    // (e.g. the agent_end token-column upsert) must not blank it out.
     tracer.phaseUpsert({
       phaseId,
       adwId,
