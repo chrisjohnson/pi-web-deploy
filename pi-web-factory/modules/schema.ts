@@ -12,7 +12,7 @@
  * WAL mode, per observability.md's "WAL pragmas" section — open on every
  * connection, writer and reader alike.
  *
- * ── Terminology migration (M-074, pi-web-adw-design.md §7) ────────────────
+ * ── Terminology migration (pi-web-adw-design.md §7) ────────────────────────
  * §7 formalizes new vocabulary: "Workflow Run" (was "session"/"chain run"),
  * "Step" (was "phase"), "Role" (was "owner"/"agent identity"). §7.3 leaves
  * the exact identifier characters to the implementer, with a recommendation:
@@ -25,10 +25,10 @@
  *   - TS-facing types/fields are named `WorkflowRun`/`Step`/`role` (see
  *     tracer.ts) — the rename is entirely in how TypeScript code refers to
  *     these tables and columns, never in the schema strings below.
- * New columns added by M-074, all nullable / additive, no migration of
- * existing rows required:
- *   - `sessions.title` — a Workflow Run's title (§7.3), not populated by
- *     M-074 itself; later cards derive it from the prompt or a ticket title.
+ * A few columns are nullable / additive, no migration of existing rows
+ * required:
+ *   - `sessions.title` — a Workflow Run's title (§7.3), derived from the
+ *     prompt or a ticket title.
  *   - `phases.input_tokens` / `output_tokens` / `cached_tokens` — per-Step
  *     token usage (§7.3: "today's schema only accumulates tokens at the
  *     [Workflow Run] level... needs new columns on the steps table").
@@ -41,7 +41,7 @@
  * exactly one ticket per run, no run without a ticket — see
  * `modules/ticket.ts`). `ticket_id` is a plain string, deliberately NOT
  * shaped like this codebase's own `adw_<hex>` ids, so it can hold either an
- * externally-minted id (e.g. a `.fleet` board id like `M-103`) or an
+ * externally-minted id (e.g. a `.fleet` board id) or an
  * internally-minted one (`ticket_<hex>`, mirroring `adw_<hex>` but visually
  * distinct so the two id spaces never collide). `file_path` is a pure
  * reference field — never opened/parsed/watched by any code in this
@@ -87,7 +87,7 @@
 
 export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS tickets (
-  ticket_id           TEXT PRIMARY KEY,  -- external (e.g. "M-103") or internal ("ticket_<hex>") — see module header
+  ticket_id           TEXT PRIMARY KEY,  -- external (e.g. a .fleet board id) or internal ("ticket_<hex>") — see module header
   file_path           TEXT,              -- nullable: pure reference to an external ticket file (e.g. a .fleet board path); never read/parsed by this codebase
   created_at          TEXT,
   title               TEXT,              -- derived (deriveTitleFromPrompt) from the FIRST linked run's prompt
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   adw_id        TEXT PRIMARY KEY,
   adw_name      TEXT,                -- ADW script(s) run, e.g. "adw_plan + adw_build_test"
   project_cwd   TEXT,                -- DEVIATION FROM UPSTREAM: which project this run targeted (abs path) — required since one db spans N projects, unlike upstream's per-repo db
-  title         TEXT,                -- M-074: Workflow Run title — derived from the prompt or a future ticket's title; NOT populated by M-074 itself
+  title         TEXT,                -- Workflow Run title — derived from the prompt or a ticket's title
   request       TEXT,
   status        TEXT,                -- running | success | fail
   engineer      TEXT,
@@ -114,10 +114,10 @@ CREATE TABLE IF NOT EXISTS phases (
   status        TEXT DEFAULT 'fail', -- success must be earned
   attempt       INTEGER DEFAULT 0, retries INTEGER DEFAULT 0,
   error         TEXT,
-  input_tokens  INTEGER,             -- M-074: per-Step token usage, nullable (code steps never populate)
+  input_tokens  INTEGER,             -- per-Step token usage, nullable (code steps never populate)
   output_tokens INTEGER,
   cached_tokens INTEGER,
-  output_summary TEXT,               -- M-074: short outcome summary (agent step's envelope summary, or a code step's gate headline)
+  output_summary TEXT,               -- short outcome summary (agent step's envelope summary, or a code step's gate headline)
   artifact_json TEXT,                -- {branch, commitSha, prUrl} for a completed Step's real output — see module header
   started_at    TEXT, ended_at TEXT
 );
