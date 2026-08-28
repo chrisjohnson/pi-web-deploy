@@ -1,4 +1,4 @@
-"""Entrypoint for pi-web-session-watcher (M-111; multi-session in M-116).
+"""Entrypoint for pi-web-session-watcher.
 
 Standing service: polls a manually-configured list of real, live pi-web
 interactive chat sessions (`PI_WEB_WATCHER_SESSION_IDS`) and auto-sends a

@@ -1,9 +1,9 @@
-"""Tiny stdlib-only mock pi-web HTTP server for end-to-end watcher tests
-(M-111). Serves canned `/messages` responses matching pi-web's real API
-shape and records every `/prompt` POST it receives, so tests can assert on
-exactly what the watcher sent (and how many times).
+"""Tiny stdlib-only mock pi-web HTTP server for end-to-end watcher tests.
+Serves canned `/messages` responses matching pi-web's real API shape and
+records every `/prompt` POST it receives, so tests can assert on exactly
+what the watcher sent (and how many times).
 
-No third-party deps — `http.server` + `json`, as directed by the card.
+No third-party deps — `http.server` + `json`.
 """
 
 from __future__ import annotations
@@ -132,10 +132,9 @@ def _make_handler(server: "MockPiWebServer") -> type[BaseHTTPRequestHandler]:
                 # Mirrors the REAL pi-web API's own validation, confirmed by
                 # reading @jmfederico/pi-web's own compiled server source
                 # (sessionRoutes.js's sessionRefFromBody +
-                # piSessionService.js's requirePromptText) during M-111's
-                # live deployment verification — catches a client-side
-                # regression against this exact contract in tests, not just
-                # in prod.
+                # piSessionService.js's requirePromptText) — catches a
+                # client-side regression against this exact contract in
+                # tests, not just in prod.
                 if not isinstance(payload.get("cwd"), str) or payload.get("cwd") == "":
                     self._send_json_error(400, "cwd field must be a string")
                     return

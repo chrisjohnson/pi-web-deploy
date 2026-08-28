@@ -1,4 +1,4 @@
-"""Core poll-detect-act loop for pi-web-session-watcher (M-111).
+"""Core poll-detect-act loop for pi-web-session-watcher.
 
 Separated from `main.py` so the full loop (minus real network calls) is
 unit-testable against a fake/mock client — see `test_watcher.py`.

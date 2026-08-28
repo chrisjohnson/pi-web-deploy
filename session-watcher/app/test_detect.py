@@ -1,5 +1,5 @@
-"""Unit tests for detect.py against REAL captured pi-web session fixtures
-(M-111). See fixtures.py for provenance of each fixture."""
+"""Unit tests for detect.py against REAL captured pi-web session fixtures.
+See fixtures.py for provenance of each fixture."""
 
 from __future__ import annotations
 

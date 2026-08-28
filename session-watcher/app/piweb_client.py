@@ -1,7 +1,6 @@
-"""Minimal pi-web HTTP client for the session watcher (M-111).
+"""Minimal pi-web HTTP client for the session watcher.
 
-Confirmed live against the real running pi-web instance during this card's
-investigation:
+Confirmed live against the real running pi-web instance:
 
   GET  /api/machines/local/sessions/<sessionId>/messages?cwd=<cwd>&limit=<n>
        -> {"messages": [...]} (a `MessagePage`-shaped object; NOT a bare

@@ -1,10 +1,10 @@
-"""Configuration for pi-web-session-watcher (M-111, multi-session in M-116).
+"""Configuration for pi-web-session-watcher.
 
 All knobs are environment-variable overridable, matching the convention
 already established by `docker/llm-inference-bench/app/config.py`.
 
-How to add a new session to watch (M-116 — manual opt-in stays the model;
-this is the whole procedure):
+How to add a new session to watch (manual opt-in is the model; this is
+the whole procedure):
   1. Get the session ID you want watched from pi-web's own UI (visible in
      its URL/session list) or its API (`GET /api/machines/local/sessions`).
   2. Add it to the `PI_WEB_WATCHER_SESSION_IDS` env var in
@@ -40,11 +40,11 @@ def _env_str_list(name: str, default: str) -> list[str]:
     return [part.strip() for part in raw.split(",") if part.strip()]
 
 
-# The one real session this watcher was originally built for (M-111 card).
-# Still the default if PI_WEB_WATCHER_SESSION_IDS is unset, so existing
+# The one real session this watcher was originally built for. Still the
+# default if PI_WEB_WATCHER_SESSION_IDS is unset, so existing
 # single-session deployments keep working with no config change. Manual
-# opt-in remains the model (M-116 decision) — do NOT widen this to "watch
-# every session on the box" without a fresh, explicit ask.
+# opt-in remains the model — do NOT widen this to "watch every session on
+# the box" without a fresh, explicit ask.
 DEFAULT_SESSION_ID = "019fdac9-e588-7922-b718-9e788a486f5a"
 
 # The continuation text is deliberately distinguishable from anything Chris
@@ -55,7 +55,7 @@ CONTINUE_MESSAGE = "keep going (auto-resumed after timeout)"
 @dataclass
 class Config:
     base_url: str = os.environ.get("PI_WEB_WATCHER_BASE_URL", "http://127.0.0.1:8080")
-    # M-116: comma-separated list of session IDs to watch, e.g.
+    # Comma-separated list of session IDs to watch, e.g.
     # "id1,id2,id3". Adding/removing entries here (then restarting the
     # container) is the entire "opt a session in/out of auto-continue"
     # mechanism — see this module's docstring above for the full procedure.

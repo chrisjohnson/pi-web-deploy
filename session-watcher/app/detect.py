@@ -1,8 +1,8 @@
-"""Detection logic for the timeout-abort failure pattern (M-111).
+"""Detection logic for the timeout-abort failure pattern.
 
 Two textually-distinct failure shapes exist in real pi-web session history
-(confirmed against session 019fdac9-e588-7922-b718-9e788a486f5a's own JSONL,
-see the card's decision log for the exact fixtures pulled):
+(confirmed against session 019fdac9-e588-7922-b718-9e788a486f5a's own JSONL;
+see fixtures.py for the exact fixtures pulled):
 
   1. Timeout-abort (pi-web's own outbound litellm call gives up after its
      internal 5-minute idle timeout on a legitimately-still-generating

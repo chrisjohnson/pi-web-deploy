@@ -1,6 +1,6 @@
 """End-to-end tests: full poll-detect-act loop against a real (mock) HTTP
 server, exercising the actual `piweb_client.py` request/response code path
-(not a stubbed-out client) — per M-111's verification requirements.
+(not a stubbed-out client).
 """
 
 from __future__ import annotations
@@ -117,12 +117,11 @@ class TestEndToEndNoActionOnNormalCompletion:
 
 
 class TestPiWebClientPromptContract:
-    """Regression guard for the real /prompt request-body contract, caught
-    the hard way during M-111's own live deployment verification (two
-    successive real 400s): the route requires exactly `{"text": ...,
-    "cwd": ...}` — not the browser-UI-shaped `{"role", "content": [...]}`
-    body initially assumed. Confirmed authoritatively by reading pi-web's
-    own compiled server source (sessionRoutes.js's `sessionRefFromBody` +
+    """Regression guard for the real /prompt request-body contract: the
+    route requires exactly `{"text": ..., "cwd": ...}` — NOT the
+    browser-UI-shaped `{"role", "content": [...]}` body it might look like
+    at a glance. Confirmed authoritatively by reading pi-web's own compiled
+    server source (sessionRoutes.js's `sessionRefFromBody` +
     piSessionService.js's `requirePromptText`) inside the live container.
     The mock server enforces the same two checks so a regression here is
     caught by the test suite, not just in prod against a real session."""
@@ -283,8 +282,8 @@ class TestCooldown:
 
 
 class TestMultiSessionIndependence:
-    """M-116: watching 2+ sessions must monitor each fully independently —
-    a stall (and its resulting cooldown) in one session must have zero
+    """Watching 2+ sessions must monitor each fully independently — a
+    stall (and its resulting cooldown) in one session must have zero
     effect on detection/cooldown for any other configured session."""
 
     def test_poll_all_acts_on_every_stalled_session_in_the_configured_list(self):

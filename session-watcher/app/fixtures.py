@@ -1,4 +1,4 @@
-"""Real captured fixtures for pi-web-session-watcher's tests (M-111).
+"""Real captured fixtures for pi-web-session-watcher's tests.
 
 Pulled from the ACTUAL historical session file on local-ai-machine:
   ~/.pi-web/sessions/--work-local-ai-machine--/2026-08-07T05-54-52-424Z_019fdac9-e588-7922-b718-9e788a486f5a.jsonl
