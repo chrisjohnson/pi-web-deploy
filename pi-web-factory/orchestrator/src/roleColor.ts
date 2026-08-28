@@ -4,10 +4,10 @@
  * (`palette.ts`) — text/border/surface/surface-light/surface-dark/solid
  * colors, theme-aware (light/dark), used everywhere a Role is shown
  * visually: grid mini-Gantt, detail full Gantt, nested event lists, the
- * detail page's step-detail panel background (M-105 item 3).
+ * detail page's step-detail panel background.
  *
- * ── M-105 Phase A rewrite ──────────────────────────────────────────────────
- * Pre-M-105, this module was a fixed lookup table of hand-picked hex pairs,
+ * ── Why this is a thin wrapper over palette.ts, not a lookup table ────────
+ * This module used to be a fixed lookup table of hand-picked hex pairs,
  * authored twice (once per light/dark theme) — every new Role/Step kind
  * meant a human (or an agent) hand-picking 4 new hex values, twice. Now a
  * thin, theme-aware wrapper over `palette.ts`'s deterministic hue-generation
@@ -18,11 +18,11 @@
  * specific numbers used.
  *
  * ── Why real `hsl(...)` strings, not `var(--role-*)` CSS custom properties
- * (the pre-M-105 approach) ─────────────────────────────────────────────────
+ * (the old approach) ────────────────────────────────────────────────────────
  * A `--role-<name>` CSS custom property must be authored, by name, in
  * style.css before it can be referenced — which is exactly the "someone has
- * to hand-pick a new palette every time a Role is added" problem item 2
- * calls out. Computing the color in JS (this module) and emitting it as a
+ * to hand-pick a new palette every time a Role is added" problem this
+ * rewrite solves. Computing the color in JS (this module) and emitting it as a
  * literal inline-style value sidesteps that entirely: no CSS authoring step
  * is possible to forget, for ANY future role/step-kind name. Theme
  * (light/dark) is read once via `matchMedia('(prefers-color-scheme: dark)')`
@@ -38,8 +38,8 @@
  * style.css) remain real CSS custom properties, untouched — a small, FIXED
  * set of exactly three meanings that will never grow, so the "scalability"
  * problem this rewrite solves doesn't apply to them; role identity and
- * run/Step status stay deliberately separate visual systems (unchanged from
- * the pre-M-105 design).
+ * run/Step status stay deliberately separate visual systems (unchanged
+ * from the original design).
  */
 
 import { paletteForName, type MiniPalette } from "./palette";
@@ -95,7 +95,7 @@ export function roleMiniPalette(role: string | null | undefined): MiniPalette | 
  * fallback for `null`/empty. Never throws. Kept as the primary export (the
  * shape most existing callers — badges, bar fills — actually need); use
  * `roleMiniPalette` directly when the fuller 5-token palette is needed
- * (e.g. the detail page's step-detail panel background, M-105 item 3).
+ * (e.g. the detail page's step-detail panel background).
  */
 export function roleColor(role: string | null | undefined): RoleColorTokens {
   const palette = roleMiniPalette(role);

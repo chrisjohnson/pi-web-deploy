@@ -1,11 +1,11 @@
 /**
  * projectReconcile.ts: reconciliation pass for STALE pi-web project
- * registrations — M-115, Plan item 2.
+ * registrations.
  *
  * ── The problem this closes ───────────────────────────────────────────────
  * `piwebProject.ts`'s `ensureProjectRegistered` matches/creates by exact
  * path string, and nothing ever prunes an entry once its underlying
- * directory stops existing (a project root that moved, e.g. M-109's
+ * directory stops existing (a project root that moved, e.g. a
  * `pi-web-perf-metrics` incident: registered at the old, now-gone
  * `/home/piweb/pi-web-perf-metrics`, re-registered correctly at
  * `/work/pi-web-perf-metrics`, but the OLD entry just sits in `GET
@@ -18,20 +18,17 @@
  * A registered project is flagged stale for either of two reasons, checked
  * in this order:
  *   1. `missing-path` — the directory no longer exists at all (the
- *      M-109-incident shape: the project moved/was recreated elsewhere).
+ *      project moved/was recreated elsewhere).
  *   2. `not-a-repo-root` — the directory exists but has no `.git` directly
- *      inside it (the `/work`-registered-as-a-project shape from this same
- *      card: `/work` itself is real, readable, and exists, but is the whole
- *      bind mount, not a single repo — mirrors `worktree.ts`'s
- *      `assertRealRepoRoot`, M-115's OTHER guard, applied here to the
- *      registry side rather than the pre-flight-check side).
+ *      inside it (the `/work`-registered-as-a-project shape: `/work` itself
+ *      is real, readable, and exists, but is the whole bind mount, not a
+ *      single repo — mirrors `worktree.ts`'s `assertRealRepoRoot`, applied
+ *      here to the registry side rather than the pre-flight-check side).
  * A project passing neither check is left completely untouched.
  *
  * ── Deletion IS supported, confirmed live (not assumed) ───────────────────
- * This card's Plan explicitly required confirming, against pi-web's real
- * API, whether a delete route exists before assuming a delete-capable pass
- * was buildable (rather than a report-only one). Confirmed directly against
- * the live deployed server, 2026-08-18: `DELETE /projects/:id` exists and
+ * Confirmed directly against the live deployed server, 2026-08-18:
+ * `DELETE /projects/:id` exists and
  * behaves as expected — `200` for a real, existing project id (response
  * body `{"closed":true}`), `404` with `{"error":"Project not found"}` for an
  * unknown one. `piwebProject.ts`'s `deleteProject` wraps this route. So this
@@ -41,7 +38,7 @@
  * happened to it.
  *
  * ── Style: mirrors retryTrigger.ts's own reconciliation-pass shape ────────
- * Same split this codebase already established for M-100/M-103's
+ * Same split this codebase already established for its other
  * reconciliation pass (`retryTrigger.ts`): a pure "compute the plan" half
  * (`planStaleProjects`, network reads only, no writes) and a separate
  * "execute the plan" half (`reconcileStaleProjects`, does the actual
@@ -59,10 +56,10 @@
  * checks below run against the CALLING process's own filesystem — from
  * inside the orchestrator container, `existsSync('/work/...')` would be
  * `false` UNCONDITIONALLY for every real, currently-registered, actively-in-
- * use project (every legitimate project lives under `/work`, per M-109's own
+ * use project (every legitimate project lives under `/work`, per the
  * durable-mount guard), not as a rare race. That would flag and (with
  * deletion enabled) delete every real project the moment this ran there —
- * exactly the mass-deletion failure mode this whole card exists to prevent.
+ * exactly the mass-deletion failure mode this module exists to prevent.
  * `bun cli.ts --reconcile-projects` (`cli.ts`) is therefore the ONLY
  * reconciliation entry point — it always runs via `docker exec pi-web bun
  * cli.ts ...`, i.e. inside the container that DOES have `/work` mounted

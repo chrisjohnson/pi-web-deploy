@@ -45,7 +45,7 @@ export interface WorkflowRunOptionsBase {
   testCmd?: string;
   /** Local cwd for a test/gate code step's shell-out, when it must differ from `cwd` — see planBuildTest.ts's own testCwd doc comment. */
   testCwd?: string;
-  /** M-103: the ticket this run belongs to — see modules/workflow.ts's `WorkflowRunOptions.ticketId` doc comment. Threaded through unchanged to whichever runner (YAML Workflow or planBuildTest) this name resolves to. */
+  /** The ticket this run belongs to — see modules/workflow.ts's `WorkflowRunOptions.ticketId` doc comment. Threaded through unchanged to whichever runner (YAML Workflow or planBuildTest) this name resolves to. */
   ticketId?: string;
 }
 
@@ -75,7 +75,7 @@ function loadAllWorkflows(): Workflow[] {
 const YAML_WORKFLOWS = loadAllWorkflows();
 
 /**
- * M-103: read-only access to every loaded YAML Workflow's own definition
+ * Read-only access to every loaded YAML Workflow's own definition
  * (name, steps, `retries` budget) — needed by the orchestrator's reconciliation
  * loop to look up a failed run's `retries` budget by its `sessions.adw_name`
  * (the Workflow name a run recorded at `sessionStart`, `workflow.ts`) without
@@ -84,9 +84,9 @@ const YAML_WORKFLOWS = loadAllWorkflows();
  * need `workflowFor`'s throw-on-missing semantics can import that directly
  * from `workflowDef.ts` themselves. Note this only covers YAML-defined
  * Workflows, not `chains/planBuildTest.ts` (the one hand-written chain) —
- * that chain has no `retries` concept of its own to look up (see M-103's
- * card: `retries` was added to `workflowDef.ts`'s schema specifically, not
- * to `planBuildTest.ts`'s options).
+ * that chain has no `retries` concept of its own to look up (`retries` was
+ * added to `workflowDef.ts`'s schema specifically, not to
+ * `planBuildTest.ts`'s options).
  */
 export function loadedWorkflows(): Workflow[] {
   return YAML_WORKFLOWS;
@@ -152,18 +152,17 @@ export function workflowNames(): string[] {
 }
 
 /**
- * M-104: whole-Workflow "when to pick me" prose for every registered
+ * Whole-Workflow "when to pick me" prose for every registered
  * Workflow, keyed by the same `--workflow` name as `workflowRegistry` —
  * what `cli.ts --list-workflows` prints, and what `skills/pi-web-factory/
  * SKILL.md` shells out to read instead of embedding a static, hand-maintained
- * table (candidate (a), M-104's Plan). The three YAML-defined Workflows carry
+ * table. The three YAML-defined Workflows carry
  * their own `description` inline in `workflows/*.yaml`
  * (`modules/workflowDef.ts`'s schema) and are read straight off
  * `YAML_WORKFLOWS` here — never duplicated by hand. `plan-build-test` is the
  * one exception: it's `chains/planBuildTest.ts`, a hand-written chain with no
- * YAML file of its own, so its description is hardcoded here instead (M-104
- * card's open question 4, resolved in the card's Plan: a small hardcoded
- * constant, not a new sidecar file just for one chain).
+ * YAML file of its own, so its description is hardcoded here instead — a
+ * small hardcoded constant, not a new sidecar file just for one chain.
  */
 const HAND_WRITTEN_WORKFLOW_DESCRIPTIONS: Record<string, string> = {
   "plan-build-test":
@@ -180,7 +179,7 @@ export const WORKFLOW_DESCRIPTIONS: Record<string, string> = Object.fromEntries(
       // Fails loudly at module-load time (same discipline as workflowDef.ts's
       // own ConfigError) rather than silently shipping a Workflow the router
       // can't describe — a registered name with no description anywhere
-      // defeats the whole point of M-104.
+      // defeats the whole point of this table.
       throw new Error(`workflow ${JSON.stringify(name)} is registered but has no description anywhere (neither its YAML nor HAND_WRITTEN_WORKFLOW_DESCRIPTIONS)`);
     }
     return [name, description];

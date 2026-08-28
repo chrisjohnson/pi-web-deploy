@@ -1,16 +1,16 @@
 /**
- * stepArtifact.ts: M-121's "what did this Step actually accomplish" record —
- * a completed `agent` Step's real output (branch name, commit SHA, PR link
+ * stepArtifact.ts: "what did this Step actually accomplish" record — a
+ * completed `agent` Step's real output (branch name, commit SHA, PR link
  * if one was opened), captured the moment that Step reaches a terminal
  * SUCCESS outcome (`workflow.ts`'s `runAgentStep`), not just at run end.
  *
- * Filed directly from a real incident (M-121's own card): a `build` Step
- * pushed real commits, then the following `review` Step hit a
- * `waitForCompletion` timeout and failed the whole run — the run's own
- * record had no artifact pointing back at the build's real work, so a human
- * looking at the failed run had no visibility into what actually happened
- * before the failure (the pushed branch was only discoverable because the
- * build agent happened to push directly to origin on its own initiative).
+ * Filed directly from a real incident: a `build` Step pushed real commits,
+ * then the following `review` Step hit a `waitForCompletion` timeout and
+ * failed the whole run — the run's own record had no artifact pointing
+ * back at the build's real work, so a human looking at the failed run had
+ * no visibility into what actually happened before the failure (the
+ * pushed branch was only discoverable because the build agent happened to
+ * push directly to origin on its own initiative).
  *
  * Deliberately narrow, matching this codebase's "one Workflow Run = one
  * worktree/branch" model (`worktree.ts`'s `branchNameFor`): every Step in a
@@ -19,15 +19,15 @@
  * `HEAD` pointed at the moment THAT Step finished (an agent Step commonly
  * commits its own work before returning its envelope). `prUrl` is always
  * null today (no code path in this codebase opens a PR yet) — the field
- * exists so a future auto-PR Step (M-118) can populate it without a second
- * schema migration; `recordStepArtifact`'s caller is free to pass one in
- * once that exists.
+ * exists so a future auto-PR Step can populate it without a second schema
+ * migration; `recordStepArtifact`'s caller is free to pass one in once
+ * that exists.
  */
 
 import { spawnSync } from "node:child_process";
 
 /**
- * M-121 review follow-up (2026-08-17): `spawnSync` blocks the ENTIRE event
+ * `spawnSync` blocks the ENTIRE event
  * loop synchronously until the child exits — a hung `git` process (a stuck
  * lock file, a wedged filesystem) would stall the whole pi-web-factory
  * process, not just the current Step, since these two helpers now run
@@ -51,7 +51,7 @@ export interface StepArtifact {
   branch: string | null;
   /** `HEAD`'s commit SHA in the Step's own cwd at the moment the Step finished, or null if it couldn't be read (e.g. no commits yet, not a git checkout). */
   commitSha: string | null;
-  /** A PR URL, if one was opened for this run's branch — always null today (no auto-PR Step exists yet in this codebase); forward-compatible slot for M-118. */
+  /** A PR URL, if one was opened for this run's branch — always null today (no auto-PR Step exists yet in this codebase); a forward-compatible slot for when one does. */
   prUrl: string | null;
 }
 
@@ -79,8 +79,8 @@ export function currentHeadSha(cwd: string): string | null {
  * `null` on any failure (including a timeout — see `GIT_SPAWN_TIMEOUT_MS`).
  * Read fresh from the actual checkout rather than assumed from
  * `worktree.ts`'s `branchNameFor(adwId)` naming convention, because that
- * assumption does NOT hold for a resumed run: M-103's own verified finding
- * is that `--session-id` resume mints a brand-new `adwId` while reusing the
+ * assumption does NOT hold for a resumed run: verified that `--session-id`
+ * resume mints a brand-new `adwId` while reusing the
  * OLD worktree/branch — so `branchNameFor(newAdwId)` would name a branch
  * that was never actually created. Reading the real branch is correct in
  * both the fresh-run and resumed-run case, no special casing needed here.
