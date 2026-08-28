@@ -7,7 +7,7 @@
  * ── Ticket id shape ────────────────────────────────────────────────────────
  * Deliberately NOT tied to this codebase's own `adw_<hex>` shape (`tracer.ts`'s
  * `newId`/`cli.ts`'s adwId minting) — a ticket id must also be able to hold an
- * EXTERNAL id (e.g. `.fleet`'s `M-103`/`K-042.1` shapes) when one is passed
+ * EXTERNAL id (e.g. `.fleet` board id shapes) when one is passed
  * explicitly. When no external id is given (the common "just run something"
  * case), this module mints `ticket_<hex>` — visually distinct from `adw_<hex>`
  * so the two id spaces never collide and are easy to tell apart at a glance in
@@ -64,7 +64,7 @@ function rowToTicket(row: TicketRow): Ticket {
   };
 }
 
-/** Mints a fresh internal ticket id — `ticket_<12 lowercase hex chars>`, mirroring tracer.ts's `adw_<hex>` shape closely enough to read as "the same kind of id" while staying visually distinct (the `ticket_` prefix), never colliding with an adwId or an external id like `M-103`. */
+/** Mints a fresh internal ticket id — `ticket_<12 lowercase hex chars>`, mirroring tracer.ts's `adw_<hex>` shape closely enough to read as "the same kind of id" while staying visually distinct (the `ticket_` prefix), never colliding with an adwId or an external id. */
 export function mintInternalTicketId(): string {
   return `ticket_${randomBytes(6).toString("hex")}`;
 }
