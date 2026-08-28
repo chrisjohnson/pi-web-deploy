@@ -46,8 +46,9 @@ procedure.
 split repos) all share **one** GitHub App installation for their own git write operations
 — i.e. PRs/pushes performed *by the tool itself* while it's running (for this repo,
 concretely: `pi-web-factory`'s `modules/worktree.ts` pushing/PR-ing code an agent session
-wrote). Configured via `GITHUB_APP_ID` / `GITHUB_APP_INSTALLATION_ID` (not secrets — real
-values live on `local-ai-machine`'s M-131 board card) plus a private key file at
+wrote). Configured via `GITHUB_APP_ID` / `GITHUB_APP_INSTALLATION_ID` (declared, not
+secret, but the real values live only in the box's own `docker/.env` on
+`local-ai-machine`, gitignored) plus a private key file at
 `GITHUB_APP_PRIVATE_KEY_HOST_PATH` (`/home/chris/.secrets/github-app-agent-key.pem` on the
 box, mounted read-only into the container, never committed anywhere). Permissions:
 Contents/PRs/Actions/Workflows/Pages read-write, Metadata read-only (mandatory baseline).
