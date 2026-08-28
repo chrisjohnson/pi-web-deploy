@@ -1,16 +1,16 @@
 /**
- * workflowDef.ts: the Workflow YAML shape (`pi-web-adw-design.md` §7.1/§7.2,
- * M-076 card) — loader/validator for a named, reusable Step-sequence
+ * workflowDef.ts: the Workflow YAML shape (`pi-web-adw-design.md` §7.1/§7.2)
+ * — loader/validator for a named, reusable Step-sequence
  * template, separate from `workflow.ts`'s interpreter so the DATA shape and
  * the EXECUTION logic aren't tangled in one file (mirrors `roles.ts` vs
  * `run.ts`'s own separation: config/schema module vs the module that
  * actually calls out).
  *
  * ── Step kinds ────────────────────────────────────────────────────────────
- * Three kinds, deliberately narrow (card's own words: "two known shapes, not
+ * Three kinds, deliberately narrow ("two known shapes, not
  * a workflow DSL"):
  *   - `agent` — one bounded agent turn. `role` names an AgentRole (Roles
- *     registry, M-075). `prompt` is the task text for that step; may
+ *     registry). `prompt` is the task text for that step; may
  *     reference prior steps' parsed envelope fields via `{{stepName.field}}`
  *     interpolation (see `workflow.ts`'s `interpolate`) — a narrow, explicit
  *     string-substitution mechanism, NOT a general template engine.
@@ -37,16 +37,16 @@ import { ConfigError } from "./config.ts";
 // ── Raw YAML shape ───────────────────────────────────────────────────────
 
 /**
- * M-105 items 5/6: `title`/`summary` are both OPTIONAL at the schema level —
- * every Workflow YAML authored before this ticket has neither field, and
- * must keep loading/running exactly as before (no forced re-authoring).
+ * `title`/`summary` are both OPTIONAL at the schema level — an older
+ * Workflow YAML may have neither field, and must keep loading/running
+ * exactly as before (no forced re-authoring).
  * `orchestrator/src/detailView.ts` falls back to the Step's short `name`
  * keyword when `title` is absent, and simply omits the "summary" row
  * entirely when `summary` is absent — see that module's own doc comment.
  */
 const STEP_TITLE_FIELD = { title: z.string().min(1).optional() };
 const STEP_SUMMARY_FIELD = {
-  /** Human-friendly description of what this step GENERALLY accomplishes, authored once here in the workflow definition — distinct from a per-run agent's OWN output summary (`phases.output_summary`, labeled "result" on the detail page as of M-105 item 6). */
+  /** Human-friendly description of what this step GENERALLY accomplishes, authored once here in the workflow definition — distinct from a per-run agent's OWN output summary (`phases.output_summary`, labeled "result" on the detail page). */
   summary: z.string().min(1).optional(),
 };
 
@@ -94,7 +94,7 @@ const StepSchema = z.discriminatedUnion("kind", [AgentStepSchema, CodeStepSchema
 const RawWorkflowSchema = z.object({
   name: z.string().min(1),
   /**
-   * M-104: whole-Workflow-level "when to pick me" prose — a self-describing
+   * Whole-Workflow-level "when to pick me" prose — a self-describing
    * registry entry a routing caller (today: `skills/pi-web-factory/SKILL.md`,
    * via `cli.ts --list-workflows`) can read generically instead of a
    * hand-maintained table growing stale as more Workflow variants ship.
@@ -102,14 +102,12 @@ const RawWorkflowSchema = z.object({
    * above already covers "what does this step do"; this is "when should a
    * caller pick this whole Workflow", matching how the old SKILL.md table had
    * one row per Workflow, not per step). Required (not optional, unlike
-   * title/summary): every Workflow this router can select needs one — there's
-   * no legacy/pre-M-104 YAML to stay backward-compatible with the way
-   * title/summary did for M-105 (this field is brand new for every workflow).
+   * title/summary): every Workflow this router can select needs one.
    */
   description: z.string().min(1),
   steps: z.array(StepSchema).min(1),
   /**
-   * M-103: max ADDITIONAL full-run attempts allowed after an initial
+   * Max ADDITIONAL full-run attempts allowed after an initial
    * failure, before a ticket is marked exhausted and left for a human. A
    * BETWEEN-runs retry budget — each retry is its own fresh `adwId`/
    * trace-db row, linked to the same ticket — distinct from `loop`'s
@@ -131,9 +129,9 @@ export interface AgentStep {
   name: string;
   role: string;
   prompt: string;
-  /** M-105 item 5: human-friendly name, e.g. "Construct a Plan" for the `plan` step — optional, absent on every pre-M-105 Workflow YAML. */
+  /** Human-friendly name, e.g. "Construct a Plan" for the `plan` step — optional, absent on an older Workflow YAML. */
   title?: string;
-  /** M-105 item 6: human-friendly description of what this step GENERALLY accomplishes, authored once here — optional, distinct from a per-run agent's own output summary. */
+  /** Human-friendly description of what this step GENERALLY accomplishes, authored once here — optional, distinct from a per-run agent's own output summary. */
   summary?: string;
 }
 
@@ -141,9 +139,9 @@ export interface CodeStep {
   kind: "code";
   name: string;
   role: string;
-  /** M-105 item 5 — see AgentStep.title. */
+  /** See AgentStep.title. */
   title?: string;
-  /** M-105 item 6 — see AgentStep.summary. */
+  /** See AgentStep.summary. */
   summary?: string;
 }
 
@@ -159,9 +157,9 @@ export interface LoopStep {
   steps: (AgentStep | CodeStep)[];
   until: LoopUntil;
   max_rounds: number;
-  /** M-105 item 5 — see AgentStep.title. */
+  /** See AgentStep.title. */
   title?: string;
-  /** M-105 item 6 — see AgentStep.summary. */
+  /** See AgentStep.summary. */
   summary?: string;
 }
 
@@ -169,10 +167,10 @@ export type Step = AgentStep | CodeStep | LoopStep;
 
 export interface Workflow {
   name: string;
-  /** M-104: whole-Workflow "when to pick me" prose — see RawWorkflowSchema's doc comment. */
+  /** Whole-Workflow "when to pick me" prose — see RawWorkflowSchema's doc comment. */
   description: string;
   steps: Step[];
-  /** M-103: between-runs retry budget — see RawWorkflowSchema's doc comment. */
+  /** Between-runs retry budget — see RawWorkflowSchema's doc comment. */
   retries: number;
 }
 

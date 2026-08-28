@@ -1,10 +1,9 @@
 /**
- * workflow.ts: the generic Workflow interpreter (M-076 card) — replaces
+ * workflow.ts: the generic Workflow interpreter — replaces
  * "one hand-written TS file per chain shape" (`chains/planBuildTest.ts`,
- * M-066, left in place as a historical/independent third option — see this
- * card's own decision log / report for why) with ONE runner that walks any
- * `Workflow` definition (`workflowDef.ts`) against the Roles registry
- * (`roles.ts`, M-075), generically.
+ * left in place as a historical/independent third option) with ONE runner
+ * that walks any `Workflow` definition (`workflowDef.ts`) against the Roles
+ * registry (`roles.ts`), generically.
  *
  * Does, generically, exactly what `planBuildTest.ts` does by hand:
  *   - registers the target repo as a pi-web Project, creates this run's own
@@ -13,7 +12,7 @@
  *   - starts (or resumes) ONE session, threaded through every Step in order.
  *   - for an `agent` Step: resolves the Role, builds the real prompt (task
  *     text + `{{stepName.field}}` interpolation from prior steps' envelopes +
- *     the M-069 role marker), calls `run.ts`'s `runAgentPhase`, and branches
+ *     the role marker), calls `run.ts`'s `runAgentPhase`, and branches
  *     on its discriminated result exactly like `planBuildTest.ts`'s
  *     `toChainOutcome` does (ported/generalized here as `toRunOutcome`).
  *   - for a `code` Step: resolves the Role, calls `role.run(project, cwd)`,
@@ -27,7 +26,7 @@
  *     loop. Exhausted -> a genuinely distinct outcome, `"loop-exhausted"`
  *     (never silently folded into "success" or a generic "failed" — same
  *     discipline `run.ts`'s own bounded parse-retry loop already
- *     established, and this card's own brief insists on by name).
+ *     established).
  *
  * ── {{stepName.field}} interpolation ─────────────────────────────────────
  * Deliberately narrow: a flat `Record<string, string>` built up as steps
@@ -47,7 +46,7 @@
  * it's the same session getting corrected and re-prompted, same spirit as
  * `run.ts`'s own retry-on-parse-failure loop operating within one session).
  *
- * ── Per-step tracing (M-074) ─────────────────────────────────────────────
+ * ── Per-step tracing ─────────────────────────────────────────────
  * Agent steps: `run.ts`'s `runAgentPhase` already writes phase_start/
  * agent_start/agent_end/gate_pass|fail/phase_end, including per-step
  * token/output_summary columns — nothing extra needed here beyond calling it
@@ -100,7 +99,7 @@ export interface WorkflowRunOptions {
   mainCheckoutPath?: string;
   engineer?: string;
   /**
-   * M-103: the ticket this run belongs to. Omitted -> a fresh internal
+   * The ticket this run belongs to. Omitted -> a fresh internal
    * ticket is minted (`ticket.ts`'s `mintOrAttachTicket`, via
    * `Tracer.sessionStart`). Passed -> this run attaches to that ticket
    * (creating its row if the id is novel — e.g. an external `.fleet` id
@@ -110,7 +109,7 @@ export interface WorkflowRunOptions {
   ticketId?: string;
   /** Forwarded verbatim to every agent Step's `runAgentPhase` call (run.ts's own `waitOptions`) — mainly for tests, so a Step's `waitForCompletion` timeout can be exercised without a real multi-minute wait. */
   waitOptions?: { timeoutMs?: number; pollIntervalMs?: number; forcePollOnly?: boolean };
-  /** M-121: overrides for the circuit-breaker retry (max retries / backoff) — mainly for tests, so a real 15-minute backoff is never exercised in the test suite. Omitted in production, where the documented defaults (DEFAULT_MAX_STEP_RETRIES / STEP_RETRY_BACKOFF_MS) apply. */
+  /** Overrides for the circuit-breaker retry (max retries / backoff) — mainly for tests, so a real 15-minute backoff is never exercised in the test suite. Omitted in production, where the documented defaults (DEFAULT_MAX_STEP_RETRIES / STEP_RETRY_BACKOFF_MS) apply. */
   circuitBreaker?: CircuitBreakerOptions;
 }
 
@@ -299,7 +298,7 @@ function envelopeSchemaForRole(roleName: string): (typeof envelopeSchemas)[Agent
  * Structural check for "does this envelope look like a ReviewOutput" —
  * shared by `runLoopStep` (deciding whether a not-satisfied `until` envelope
  * is a review it can build a correction message from) and `runWorkflow`'s
- * final review-rejected check (M-080). Deliberately structural (`approved`
+ * final review-rejected check. Deliberately structural (`approved`
  * boolean + `findings`/`blocking` arrays present), not a role-name check —
  * a `review` Step's role is always named "review" in every shipped Workflow,
  * but this keeps the interpreter correct for a future Workflow that names
@@ -355,13 +354,13 @@ interface RunContext {
    * The phaseId of whatever Step is CURRENTLY open (a `phase_start` has been
    * traced but its terminal `phase_end` has not yet been written), or
    * `undefined` when no Step is open (between steps, or before the first
-   * step has started). M-100 Fix 1: `runAgentStep`/`runCodeStep` both know
+   * step has started). `runAgentStep`/`runCodeStep` both know
    * their own phaseId transiently, but a top-level catch-all around the
    * whole run (see `runWorkflow`'s try/catch) needs to know it too, to close
    * out whichever Step was open at the moment an uncaught exception hit —
    * e.g. a `PiWebClientError` thrown by `setModel`/`sendPrompt` BEFORE
-   * `waitForCompletion` resolves, which today leaves the row `status:
-   * 'running'` forever (see this card's Decision log for the full trace).
+   * `waitForCompletion` resolves, which would otherwise leave the row
+   * `status: 'running'` forever.
    * Set right before a Step's `phase_start` is traced, cleared right after
    * its `phase_end` is traced — so it's accurate at every point in between,
    * including inside `runLoopStep`'s inner steps.
@@ -369,47 +368,45 @@ interface RunContext {
   openPhase: { phaseId: string; stepName: string } | undefined;
   /** Forwarded to every agent Step's runAgentPhase call — see WorkflowRunOptions.waitOptions's own doc comment. */
   waitOptions: { timeoutMs?: number; pollIntervalMs?: number; forcePollOnly?: boolean } | undefined;
-  /** M-121: circuit-breaker retry overrides — see WorkflowRunOptions.circuitBreaker's own doc comment. */
+  /** Circuit-breaker retry overrides — see WorkflowRunOptions.circuitBreaker's own doc comment. */
   circuitBreaker: CircuitBreakerOptions | undefined;
 }
 
-// ── M-121: circuit-breaker retry on a timeout-class Step error ────────────
+// ── Circuit-breaker retry on a timeout-class Step error ───────────────────
 //
-// Chris's decision, verbatim (card M-121): "I would be inclined to starting
-// the timeout at 30m and then retrying with a 15m backoff and max retry
-// count before eventually failing the workflow/session." The 30-minute
-// timeout itself lives in piwebClient.ts's DEFAULT_WAIT_FOR_COMPLETION_TIMEOUT_MS
-// (also raised by this card) — what lives HERE is the circuit breaker for
-// the case a Step is genuinely stuck (not just slow), layered on top of
-// that patience rather than replacing it.
+// Chris's decision, verbatim: "I would be inclined to starting the timeout
+// at 30m and then retrying with a 15m backoff and max retry count before
+// eventually failing the workflow/session." The 30-minute timeout itself
+// lives in piwebClient.ts's DEFAULT_WAIT_FOR_COMPLETION_TIMEOUT_MS — what
+// lives HERE is the circuit breaker for the case a Step is genuinely stuck
+// (not just slow), layered on top of that patience rather than replacing it.
 //
 // Scope: only `status: "error"` results from runAgentPhase (a waitForCompletion
 // timeout, or any other error that wait-loop can return — e.g. a connection
 // failure; both are already lumped into one "error" status upstream, see
 // run.ts's RunAgentPhaseResult, so there is no finer-grained signal to retry
-// on selectively). `blocked-on-human` is explicitly excluded — Chris/the
-// card are explicit that stays always-terminal, unrelated to this change —
-// and so are unparseable/permissions-violation (already have their OWN
-// bounded retry/rejection handling, must keep working exactly as today).
+// on selectively). `blocked-on-human` is explicitly excluded — it stays
+// always-terminal, unrelated to this mechanism — and so are
+// unparseable/permissions-violation (already have their OWN bounded
+// retry/rejection handling, must keep working exactly as today).
 
-/** Bound on circuit-breaker retries after an initial `status: "error"` Step result, before the run fails for real. A tuning knob, not a design question (card's own words) — 2 additional attempts (3 total) is a sane default: enough to ride out one or two truly transient blips without turning a genuinely dead backend into a multi-hour hang (2 retries * 15min backoff + up to 2 extra 30min waits ~= 2 hours worst case). Overridable for tests. */
+/** Bound on circuit-breaker retries after an initial `status: "error"` Step result, before the run fails for real. A tuning knob, not a design question — 2 additional attempts (3 total) is a sane default: enough to ride out one or two truly transient blips without turning a genuinely dead backend into a multi-hour hang (2 retries * 15min backoff + up to 2 extra 30min waits ~= 2 hours worst case). Overridable for tests. */
 export const DEFAULT_MAX_STEP_RETRIES = 2;
 
 /** Backoff before a circuit-breaker retry attempt — Chris's explicit number ("retrying with a 15m backoff"). Overridable for tests (real 15-minute waits are never exercised in the test suite). */
 export const STEP_RETRY_BACKOFF_MS = 15 * 60 * 1000;
 
 /**
- * M-121, Plan item 3 ("same-session-vs-fresh-attempt... reasonable default
- * is to check whether the original session/generation is still
- * reachable/in-flight before starting a new one"): best-effort check via
- * `getStatus` — reachable (the call succeeds at all) is read as "the
+ * The reasonable default is to check whether the original session/generation
+ * is still reachable/in-flight before starting a new one: best-effort check
+ * via `getStatus` — reachable (the call succeeds at all) is read as "the
  * session is still alive," regardless of whether it's still streaming or
  * has already settled, since either way the SAME session can be re-prompted
  * safely (re-prompting a settled session is exactly what run.ts's own
  * retry-on-parse-failure loop already does routinely). Only an outright
  * failure to reach pi-web at all (network error, session genuinely gone —
- * a 404/expired session) is read as "dead," per the card's "fall back to a
- * fresh attempt only if the original session is confirmed dead/unreachable."
+ * a 404/expired session) is read as "dead," per the rule of falling back to
+ * a fresh attempt only if the original session is confirmed dead/unreachable.
  * Never throws.
  */
 async function sessionIsReachable(baseUrl: string, sessionId: string, cwd: string): Promise<boolean> {
@@ -433,20 +430,20 @@ export interface CircuitBreakerOptions {
 }
 
 /**
- * Wraps one `runAgentPhase` call with the M-121 circuit breaker: on a
+ * Wraps one `runAgentPhase` call with the circuit breaker: on a
  * `status: "error"` result (only), waits `backoffMs` (Chris's 15-minute
  * default), checks whether the original session is still reachable
- * (`sessionIsReachable` — same session/worktree/branch, no wasted work per
- * the card's Plan item 3), re-sends the SAME prompt against that session
+ * (`sessionIsReachable` — same session/worktree/branch, no wasted work),
+ * re-sends the SAME prompt against that session
  * (a fresh `adwId`/worktree is deliberately NOT minted here — this is a
- * WITHIN-run Step retry, a different mechanism from M-103's BETWEEN-runs
+ * WITHIN-run Step retry, a different mechanism from the BETWEEN-runs
  * `retries` budget, which mints a brand new adwId; conflating the two would
  * silently change what "resume" means for this codebase's one-worktree-per-
  * run model), and repeats up to `maxRetries` additional attempts. Every
  * retry attempt (including the reachability check's own outcome) is traced
  * as a `log` event — both for human visibility and, concretely, to keep
  * this Step's `phases` row looking recently-active to the orchestrator's
- * M-100 reconciliation sweep (`RECONCILE_STALE_MS` staleness proxy) across
+ * reconciliation sweep (`RECONCILE_STALE_MS` staleness proxy) across
  * the backoff window, so a Step legitimately waiting out a 15-minute
  * backoff is never mistaken for an abandoned run and force-failed out from
  * under itself. Any non-"error" result (success, blocked-on-human,
@@ -544,7 +541,7 @@ async function runAgentStep(
   const promptText = interpolate(rawPrompt, ctx.interpolation);
 
   const phaseId = `${ctx.adwId}_${step.name}`;
-  // M-100 Fix 1: mark this Step "open" BEFORE runAgentPhase's own
+  // Mark this Step "open" BEFORE runAgentPhase's own
   // phase_start write (it happens inside runAgentPhase, first thing) —
   // openPhase must already be accurate for the whole duration of this call,
   // including the window before phase_start lands, since runWorkflow's
@@ -561,7 +558,7 @@ async function runAgentStep(
   // so it's still accurate at the moment of a throw, and still correctly
   // reset to "nothing open" once this function returns normally.
   ctx.openPhase = { phaseId, stepName: step.name };
-  // M-121: runAgentPhaseWithCircuitBreaker wraps the plain runAgentPhase
+  // runAgentPhaseWithCircuitBreaker wraps the plain runAgentPhase
   // call with a bounded backoff-and-retry loop on a `status: "error"`
   // result only (a waitForCompletion timeout or similar) — see that
   // function's own doc comment for the full reasoning. It owns `ctx.seq`
@@ -605,14 +602,14 @@ async function runAgentStep(
   recordStepEnvelope(ctx.interpolation, step.name, envelope);
   ctx.stepResults[step.name] = envelope;
 
-  // M-121: capture this Step's real output (branch/commit/PR) the moment it
+  // Capture this Step's real output (branch/commit/PR) the moment it
   // succeeds — not just at run end — so a LATER Step's failure can never
   // erase visibility into what THIS Step actually accomplished. `branch` is
   // constant across the whole run (one worktree/branch per Workflow Run,
   // worktree.ts's own model); `commitSha` is read fresh per Step since an
   // agent Step commonly commits its own work before returning. `prUrl` is
   // always null today — no auto-PR Step exists yet in this codebase (see
-  // stepArtifact.ts's own doc comment; forward-compatible with M-118).
+  // stepArtifact.ts's own doc comment; forward-compatible with a future one).
   // Best-effort: currentBranchName/currentHeadSha never throw, so this
   // can't turn an otherwise-successful Step into a failure.
   ctx.tracer.stepArtifact(phaseId, {
@@ -637,7 +634,7 @@ async function runCodeStep(ctx: RunContext, step: CodeStep): Promise<{ report: G
     name: step.name,
     payload: { kind: "code", owner: role.name, description: `code role: ${role.function}`, seq: ctx.seq },
   });
-  // M-100 Fix 1: this Step is now open (phase_start just traced) — see
+  // This Step is now open (phase_start just traced) — see
   // ctx.openPhase's doc comment. Deliberately NOT cleared via `finally`
   // here — same reasoning as runAgentStep above: an inner `finally` would
   // run (and blank ctx.openPhase) before an exception ever reaches
@@ -649,11 +646,11 @@ async function runCodeStep(ctx: RunContext, step: CodeStep): Promise<{ report: G
   // of the project's config (see roles.ts's CODE_ROLE_REGISTRY:
   // `testsPass(project.test ?? "", cwd)`), so this interpreter only needs
   // to supply the ProjectConfig itself, via the SAME project-local lookup
-  // cli.ts/planBuildTest.ts's own testCmd derivation already established
-  // (M-070) — reused directly, not re-derived.
+  // cli.ts/planBuildTest.ts's own testCmd derivation already established —
+  // reused directly, not re-derived.
   const projectConfig = projectConfigFor(ctx.sessionCwd);
 
-  // M-099 Fix: `run-tests`' own registered function computes
+  // `run-tests`' own registered function computes
   // `project.test ?? ""` and hands THAT straight to `testsPass`, which
   // shells out via `sh -c ""` — an empty command that exits 0 and reads as
   // a silent "pass" rather than "not configured". A `.pi-web-factory.yaml`
@@ -798,20 +795,20 @@ async function runLoopStep(ctx: RunContext, loop: LoopStep): Promise<WorkflowRun
  * comment has the full breakdown). `sessionStart`/`sessionFinish` bracket
  * the whole run at the adwId level, same as planBuildTest.ts.
  *
- * ── M-100 Fix 1: write-path catch-all ─────────────────────────────────────
+ * ── Write-path catch-all ────────────────────────────────────────────────
  * `cli.ts` invokes this once per Workflow Run as a one-shot OS process (the
  * **job runner**, in this codebase's terminology — one job-runner process
- * per Workflow Run, no daemon/worker holds these runs once started). Before
- * this fix, ANY uncaught exception thrown before `runSteps` returns a
- * terminal result (e.g. the `PiWebClientError` 404 that triggered M-100's
- * investigation — a bad `--session-id` makes `setModel`/`sendPrompt` throw
- * before `waitForCompletion` is even reached) propagated all the way up to
- * `cli.ts`'s top-level `main().catch()`, which only logs and exits
- * non-zero — no `phase_end`/`sessionFinish` write anywhere in that chain.
- * Since `tracer.ts` writes status incrementally (`phase_start` sets
+ * per Workflow Run, no daemon/worker holds these runs once started). Without
+ * this, ANY uncaught exception thrown before `runSteps` returns a
+ * terminal result (e.g. a `PiWebClientError` 404 — a bad `--session-id`
+ * makes `setModel`/`sendPrompt` throw before `waitForCompletion` is even
+ * reached) propagates all the way up to `cli.ts`'s top-level
+ * `main().catch()`, which only logs and exits non-zero — no
+ * `phase_end`/`sessionFinish` write anywhere in that chain. Since
+ * `tracer.ts` writes status incrementally (`phase_start` sets
  * `phases.status='running'`; only a LATER `phase_end` resolves it), a killed
- * mid-flight run left its `phases`/`sessions` rows stuck at `'running'`
- * forever — exactly the stuck-card symptom M-100 reported.
+ * mid-flight run would leave its `phases`/`sessions` rows stuck at
+ * `'running'` forever.
  *
  * The `try/catch` below wraps this function's entire body from the moment
  * `ctx` (and therefore `ctx.openPhase`, threaded through `runAgentStep`/
@@ -825,7 +822,7 @@ async function runLoopStep(ctx: RunContext, loop: LoopStep): Promise<WorkflowRun
  * This does NOT cover every way a process can die (SIGKILL, OOM-kill, a
  * container recreate killing the `docker exec` process, host reboot — none
  * of which give JS a chance to run a `catch` block at all). That class of
- * failure is M-100 Fix 2's job: `orchestrator/server.ts`'s reconciliation
+ * failure is covered separately by `orchestrator/server.ts`'s reconciliation
  * pass, which catches orphaned `running` rows from OUTSIDE the dead
  * process, on a timer, independent of whether any code here ever got to run.
  */
@@ -834,15 +831,14 @@ export async function runWorkflow(opts: WorkflowRunOptions): Promise<WorkflowRun
   const adwId = opts.adwId ?? `adw_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
 
   const mainCheckoutPath = opts.mainCheckoutPath ?? resolveMainCheckoutPath(opts.cwd);
-  // M-115: validate the resolved main checkout path BEFORE registering it as
+  // Validate the resolved main checkout path BEFORE registering it as
   // a pi-web Project (a real, durable-side-effect POST) — not just before
   // `createRunWorktree` further down. Without this, a project path outside
   // every durable mount, or one that isn't a real single-repo root (e.g.
   // `/work` itself), would get REGISTERED with pi-web before either guard
-  // ever ran, which is exactly the "how did /work get registered as a
-  // project" question this card investigates (see PR description) — closing
-  // this ordering gap prevents a bad path from leaving even a registration
-  // artifact behind, not just from getting as far as a real worktree/branch.
+  // ever ran — closing this ordering gap prevents a bad path from leaving
+  // even a registration artifact behind, not just from getting as far as a
+  // real worktree/branch.
   // `createRunWorktree` below still runs its own copy of these same checks
   // (defense in depth — cheap, idempotent, and the only guard that fires at
   // all on a resume path where worktree creation is skipped entirely).
@@ -926,15 +922,15 @@ export async function runWorkflow(opts: WorkflowRunOptions): Promise<WorkflowRun
       return terminal;
     }
 
-    // M-080: every step's agent phase parsed successfully and no other
+    // Every step's agent phase parsed successfully and no other
     // terminal outcome fired (gate-failed/loop-exhausted/etc.) — but that
     // alone doesn't mean the run should report SUCCESS. Any review-shaped
     // step OUTSIDE a gating loop that came back approved: false must still
     // flip the run to a distinct failure-shaped status: a no-loop Workflow
     // (today just plan-build-review.yaml) has nothing else that reads
     // `approved`, so without this check a run whose last real signal was
-    // "review rejected this" silently reported SUCCESS (the bug this card
-    // fixes). Loop-internal rejections never reach here — they already
+    // "review rejected this" would silently report SUCCESS. Loop-internal
+    // rejections never reach here — they already
     // returned "loop-exhausted" (satisfied) or got corrected mid-loop, see
     // runLoopStep. Scans stepResults in step-definition order (Object.entries
     // preserves insertion order) and flips on the FIRST rejected review
@@ -951,7 +947,7 @@ export async function runWorkflow(opts: WorkflowRunOptions): Promise<WorkflowRun
     opts.tracer.sessionFinish(adwId, true);
     return { status: "success", adwId, sessionId: ctx.sessionId, link, steps: ctx.stepResults };
   } catch (error) {
-    // M-100 Fix 1 — see this function's own doc comment above.
+    // See this function's own doc comment above ("Write-path catch-all").
     const message = error instanceof Error ? error.message : String(error);
     if (ctx.openPhase) {
       opts.tracer.event({

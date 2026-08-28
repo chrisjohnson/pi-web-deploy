@@ -1,5 +1,5 @@
 /**
- * Unit tests for workflow.ts — the generic Workflow interpreter (M-076).
+ * Unit tests for workflow.ts — the generic Workflow interpreter.
  * Covers what doesn't need a live pi-web server:
  *   - `interpolate`/`recordStepEnvelope`: the {{stepName.field}} mechanism.
  *   - `buildLoopCorrectionMessage`: the chain-level correction builder.
@@ -203,7 +203,7 @@ function mockWorkflowFetch(opts: { assistantTextsByRole: Record<string, string[]
   const promptCallsByRole: Record<string, string[]> = {};
   const roleCallIndex: Record<string, number> = {};
   let lastPromptedSessionRole = ""; // tracks which role's prompt is "in flight" so /messages can answer correctly
-  // M-095: ensureProjectRegistered now does a verify-after-write GET
+  // ensureProjectRegistered does a verify-after-write GET
   // /projects after its POST — this mock must actually reflect a
   // just-POSTed project on the NEXT GET, not always return [], or every
   // registration in these tests would (correctly, per the new client-side
@@ -233,7 +233,7 @@ function mockWorkflowFetch(opts: { assistantTextsByRole: Record<string, string[]
     }
     if (url.includes("/projects/") && url.endsWith("/workspaces")) {
       // Real pi-web wraps this in an envelope object, not a bare array —
-      // confirmed live 2026-08-13 (M-114).
+      // confirmed live 2026-08-13.
       return new Response(
         JSON.stringify({
           status: "provider",
@@ -376,7 +376,7 @@ workflows:
         prompt: "Reply with JSON."
 `)[0] as Workflow;
 
-    // M-095: echo back whatever `path` the caller actually POSTed (NOT the
+    // Echo back whatever `path` the caller actually POSTed (NOT the
     // test's own `cwd` closure variable) — ensureProjectRegistered registers
     // resolveMainCheckoutPath(cwd), which can legitimately differ from the
     // raw cwd string (e.g. macOS symlinks /tmp -> /private/tmp via
@@ -488,7 +488,7 @@ workflows:
         prompt: "Reply with JSON."
 `)[0] as Workflow;
 
-    // M-095: echo back whatever `path` the caller actually POSTed (NOT the
+    // Echo back whatever `path` the caller actually POSTed (NOT the
     // test's own `cwd` closure variable) — ensureProjectRegistered registers
     // resolveMainCheckoutPath(cwd), which can legitimately differ from the
     // raw cwd string (e.g. macOS symlinks /tmp -> /private/tmp via
@@ -547,7 +547,7 @@ workflows:
   });
 });
 
-describe("runWorkflow — review-rejected outside a loop (M-080)", () => {
+describe("runWorkflow — review-rejected outside a loop", () => {
   test("a no-loop Workflow ending in a review step with approved: false reports 'review-rejected', not 'success'", async () => {
     const workflow: Workflow = loadWorkflowsFromString(`
 workflows:
@@ -783,10 +783,10 @@ workflows:
     expect(gateRow?.passed).toBe(0);
   });
 
-  test("a .pi-web-factory.yaml that omits test: fails loudly instead of silently passing (M-099)", async () => {
+  test("a .pi-web-factory.yaml that omits test: fails loudly instead of silently passing", async () => {
     // Deliberately no "test:" key at all — distinct from the pass/fail cases
-    // above, which both set one explicitly. Before M-099's fix, roles.ts's
-    // run-tests function computed `project.test ?? ""` and shelled out
+    // above, which both set one explicitly. Without this guard, roles.ts's
+    // run-tests function would compute `project.test ?? ""` and shell out
     // `sh -c ""`, which exits 0 and reads as a false "pass". No gate_results
     // row should even be written for this case — it must fail before ever
     // calling testsPass.
@@ -956,7 +956,7 @@ workflows:
   });
 
   test("an inner step's own terminal outcome (e.g. blocked-on-human) stops the loop immediately, not folded into loop-exhausted", async () => {
-    // M-095: echo back whatever `path` the caller actually POSTed (NOT the
+    // Echo back whatever `path` the caller actually POSTed (NOT the
     // test's own `cwd` closure variable) — ensureProjectRegistered registers
     // resolveMainCheckoutPath(cwd), which can legitimately differ from the
     // raw cwd string (e.g. macOS symlinks /tmp -> /private/tmp via
@@ -1135,15 +1135,15 @@ workflows:
   });
 });
 
-// ── M-100 Fix 1: write-path catch-all ──────────────────────────────────────
+// ── Write-path catch-all ────────────────────────────────────────────────────
 
-describe("runWorkflow — catch-all on an uncaught exception (M-100 Fix 1)", () => {
+describe("runWorkflow — catch-all on an uncaught exception", () => {
   test("an agent step's setModel throwing before waitForCompletion still writes a terminal fail phase_end and sessionFinish, then re-throws", async () => {
-    // Reproduces M-100's real root cause exactly: a PiWebClientError (e.g. a
+    // Reproduces the real failure mode exactly: a PiWebClientError (e.g. a
     // bad/nonexistent --session-id, HTTP 404) thrown by setModel/sendPrompt
-    // BEFORE waitForCompletion is ever reached. Before this fix, that
-    // propagated all the way past runWorkflow uncaught, leaving the phase
-    // row stuck at status='running' forever (see this card's Decision log).
+    // BEFORE waitForCompletion is ever reached. Without this catch-all, that
+    // would propagate all the way past runWorkflow uncaught, leaving the
+    // phase row stuck at status='running' forever.
     const workflow: Workflow = loadWorkflowsFromString(`
 workflows:
   - name: single
@@ -1155,7 +1155,7 @@ workflows:
         prompt: "Reply with JSON."
 `)[0] as Workflow;
 
-    // M-095: echo back whatever `path` the caller actually POSTed (NOT the
+    // Echo back whatever `path` the caller actually POSTed (NOT the
     // test's own `cwd` closure variable) — ensureProjectRegistered registers
     // resolveMainCheckoutPath(cwd), which can legitimately differ from the
     // raw cwd string (e.g. macOS symlinks /tmp -> /private/tmp via
@@ -1220,7 +1220,7 @@ workflows:
     // Same catch-all, exercised via a code Step instead of an agent Step —
     // confirms ctx.openPhase tracking works for both runAgentStep AND
     // runCodeStep call sites (see RunContext's doc comment), not just the
-    // agent-step path M-100's original investigation happened to hit.
+    // agent-step path.
     const config = loadRolesConfigFromString(
       `
 defaults: {model: local-litellm/medium-moe, thinking: medium, protected_files: []}
@@ -1272,7 +1272,7 @@ workflows:
   });
 });
 
-describe("runWorkflow — worktree-per-run (M-071 pattern, generalized)", () => {
+describe("runWorkflow — worktree-per-run", () => {
   test("a fresh run (no sessionId) creates a real worktree and uses it as the session cwd", async () => {
     const workflow: Workflow = loadWorkflowsFromString(`
 workflows:
@@ -1309,9 +1309,9 @@ workflows:
   });
 });
 
-// ── M-115: project-path guards run BEFORE registration, not just before worktree creation ──
+// ── Project-path guards run BEFORE registration, not just before worktree creation ──
 
-describe("runWorkflow — project-path guards fire before pi-web project registration (M-115)", () => {
+describe("runWorkflow — project-path guards fire before pi-web project registration", () => {
   const originalDurableMounts = process.env[DURABLE_MOUNTS_ENV_VAR];
   afterEach(() => {
     if (originalDurableMounts === undefined) delete process.env[DURABLE_MOUNTS_ENV_VAR];
@@ -1393,9 +1393,9 @@ workflows:
   });
 });
 
-// ── M-121: circuit-breaker retry on a timeout-class Step error ────────────
+// ── Circuit-breaker retry on a timeout-class Step error ───────────────────
 
-describe("runAgentPhaseWithCircuitBreaker (via runWorkflow) — M-121", () => {
+describe("runAgentPhaseWithCircuitBreaker (via runWorkflow)", () => {
   test("a status:'error' Step result (waitForCompletion timeout) retries and succeeds on the 2nd attempt — same session, no fresh worktree", async () => {
     const workflow: Workflow = loadWorkflowsFromString(`
 workflows:
@@ -1641,9 +1641,9 @@ workflows:
   });
 });
 
-// ── M-121: artifact capture (branch/commit/PR) on a completed Step ────────
+// ── Artifact capture (branch/commit/PR) on a completed Step ───────────────
 
-describe("runAgentStep — artifact capture (M-121)", () => {
+describe("runAgentStep — artifact capture", () => {
   test("a successful agent Step records its branch/commit into phases.artifact_json — not just at run end", async () => {
     const workflow: Workflow = loadWorkflowsFromString(`
 workflows:
@@ -1693,7 +1693,7 @@ workflows:
     expect(artifact.prUrl).toBeNull();
   });
 
-  test("an EARLIER successful Step's artifact survives a LATER Step's failure — the whole point of M-121's artifact capture", async () => {
+  test("an EARLIER successful Step's artifact survives a LATER Step's failure — the whole point of this artifact capture", async () => {
     const workflow: Workflow = loadWorkflowsFromString(`
 workflows:
   - name: two-step
@@ -1778,8 +1778,8 @@ workflows:
     expect(result.step).toBe("review");
 
     // ...but build's own artifact is still there, fully intact, in the
-    // trace db — this is the actual bug M-121 was filed to fix: a later
-    // Step's failure must never erase an earlier Step's real output.
+    // trace db — this is exactly the guarantee artifact capture exists for: a
+    // later Step's failure must never erase an earlier Step's real output.
     const buildPhase = tracer.db
       .query<{ status: string; artifact_json: string | null }, [string]>("select status, artifact_json from phases where phase_id=?")
       .get("adw_wf_artifact_survives_build");

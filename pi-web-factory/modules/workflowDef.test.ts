@@ -32,7 +32,7 @@ describe("the shipped plan-build-review.yaml", () => {
     if (build?.kind === "agent") expect(build.prompt).toContain("{{plan.summary}}");
   });
 
-  test("every step has a human-friendly title and summary (M-105 items 5/6)", () => {
+  test("every step has a human-friendly title and summary", () => {
     const [workflow] = loadWorkflows(join(WORKFLOWS_DIR, "plan-build-review.yaml"));
     for (const step of workflow?.steps ?? []) {
       expect(step.title).toBeTruthy();
@@ -42,7 +42,7 @@ describe("the shipped plan-build-review.yaml", () => {
     expect(plan?.title).toBe("Construct a Plan");
   });
 
-  test("has a whole-Workflow description a router can read (M-104)", () => {
+  test("has a whole-Workflow description a router can read", () => {
     const [workflow] = loadWorkflows(join(WORKFLOWS_DIR, "plan-build-review.yaml"));
     expect(workflow?.description).toBeTruthy();
   });
@@ -77,7 +77,7 @@ describe("the shipped bounded-build-review.yaml", () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
-  test("the loop step itself, and its inner steps, all have a title/summary (M-105 items 5/6)", () => {
+  test("the loop step itself, and its inner steps, all have a title/summary", () => {
     const [workflow] = loadWorkflows(join(WORKFLOWS_DIR, "bounded-build-review.yaml"));
     const loop = workflow?.steps.find((s) => s.kind === "loop");
     expect(loop?.title).toBeTruthy();
@@ -90,14 +90,14 @@ describe("the shipped bounded-build-review.yaml", () => {
     }
   });
 
-  test("has a whole-Workflow description a router can read (M-104)", () => {
+  test("has a whole-Workflow description a router can read", () => {
     const [workflow] = loadWorkflows(join(WORKFLOWS_DIR, "bounded-build-review.yaml"));
     expect(workflow?.description).toBeTruthy();
   });
 });
 
-describe("the shipped plan-build-review-with-tests.yaml (M-099)", () => {
-  test("loads and validates successfully from disk, with a whole-Workflow description (M-104)", () => {
+describe("the shipped plan-build-review-with-tests.yaml", () => {
+  test("loads and validates successfully from disk, with a whole-Workflow description", () => {
     const workflows = loadWorkflows(join(WORKFLOWS_DIR, "plan-build-review-with-tests.yaml"));
     expect(workflows.length).toBe(1);
     expect(workflows[0]?.name).toBe("plan-build-review-with-tests");
@@ -105,7 +105,7 @@ describe("the shipped plan-build-review-with-tests.yaml (M-099)", () => {
   });
 });
 
-describe("retries (M-103)", () => {
+describe("retries", () => {
   test("defaults to 0 when omitted — both shipped Workflow files (no retries field authored)", () => {
     const [pbr] = loadWorkflows(join(WORKFLOWS_DIR, "plan-build-review.yaml"));
     const [bbr] = loadWorkflows(join(WORKFLOWS_DIR, "bounded-build-review.yaml"));
@@ -254,7 +254,7 @@ workflows:
   });
 });
 
-describe("description (M-104)", () => {
+describe("description", () => {
   test("is REQUIRED — a workflow with no description is rejected with a ConfigError", () => {
     const yaml = `
 workflows:
@@ -298,7 +298,7 @@ workflows:
   });
 });
 
-describe("title/summary (M-105 items 5/6)", () => {
+describe("title/summary", () => {
   test("both fields are OPTIONAL — a step with neither still loads exactly as before", () => {
     const yaml = `
 workflows:
