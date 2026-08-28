@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Git credential helper (M-132): implements the protocol git expects
+// Git credential helper: implements the protocol git expects
 // (`git config credential.helper '/path/to/this get'`) — reads key=value
 // pairs on stdin (ignored; we always return the same installation-scoped
 // credential regardless of host/path), writes username/password to

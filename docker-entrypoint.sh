@@ -121,11 +121,10 @@ if [ -d /app/.pi-web/skills-seed ]; then
   done
 fi
 
-# GitHub App credential (M-134, replaces the raw chris_github_key SSH
-# mount) — same mechanism as dsh-deploy/oh-my-pi-deploy's entrypoints: a
-# git credential.helper mints a fresh installation token per operation,
-# and an insteadOf rule rewrites SSH-style GitHub URLs to HTTPS first
-# (the helper only ever applies to HTTPS remotes). No gh CLI in this
+# GitHub App credential — same mechanism as dsh-deploy/oh-my-pi-deploy's
+# entrypoints: a git credential.helper mints a fresh installation token per
+# operation, and an insteadOf rule rewrites SSH-style GitHub URLs to HTTPS
+# first (the helper only ever applies to HTTPS remotes). No gh CLI in this
 # image at all, so no gh-auth background refresh loop — nothing to
 # authenticate. pi-web-factory (modules/worktree.ts etc.) is the actual
 # git-operations consumer here, not pi-web itself.

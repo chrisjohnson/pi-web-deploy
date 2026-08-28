@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Mints a fresh GitHub App installation access token and prints it to
-// stdout, nothing else. Used two ways (M-132): directly by the gh-CLI
-// background refresh loop in docker-entrypoint.sh, and imported as the
-// core of github-app-git-credential-helper.mjs. Never caches to disk —
+// stdout, nothing else. Used two ways: directly by the gh-CLI background
+// refresh loop in docker-entrypoint.sh, and imported as the core of
+// github-app-git-credential-helper.mjs. Never caches to disk —
 // every invocation mints a genuinely fresh token, valid ~1h per GitHub's
 // own (non-configurable) installation-token lifetime.
 import { createAppAuth } from "@octokit/auth-app";

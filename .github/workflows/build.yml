@@ -24,8 +24,8 @@ jobs:
       # *.integration.test.ts files talk to a live pi-web server over SSH
       # (ssh local-ai-machine docker exec pi-web ...) — genuinely live-box
       # only, never runnable from a CI runner with no route to the box.
-      # This is an existing naming convention in this suite (M-134 is the
-      # first time it's ever run in CI at all), not a new exclusion rule.
+      # This is an existing naming convention in this suite, not a new
+      # exclusion rule.
       - name: pi-web-factory test suite (excludes live-box integration tests)
         working-directory: pi-web-factory
         run: bun test $(find . -name '*.test.ts' -not -name '*.integration.test.ts' -not -path './node_modules/*')

@@ -181,12 +181,12 @@ ENV PI_WEB_FACTORY_DB_PATH="/home/piweb/.pi-web/pi-web-factory-data/factory.db"
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# GitHub App credential helper (M-134, same mechanism as dsh-deploy/
-# oh-my-pi-deploy, adapted: no gh CLI in this image at all, so only the git
-# credential.helper + URL-rewrite piece applies - no background gh-auth
-# refresh loop needed here). Own small package.json/node_modules tree,
-# since pi-web-factory's own package.json (yaml, zod) is an unrelated
-# dependency set. Plain `npm ci` - node:22-bookworm-slim ships npm already.
+# GitHub App credential helper, same mechanism as dsh-deploy/oh-my-pi-deploy,
+# adapted: no gh CLI in this image at all, so only the git credential.helper
+# + URL-rewrite piece applies - no background gh-auth refresh loop needed
+# here. Own small package.json/node_modules tree, since pi-web-factory's own
+# package.json (yaml, zod) is an unrelated dependency set. Plain `npm ci` -
+# node:22-bookworm-slim ships npm already.
 COPY credential-helper /app/credential-helper
 RUN cd /app/credential-helper && npm ci --omit=dev && chmod +x github-app-git-credential-helper.mjs
 

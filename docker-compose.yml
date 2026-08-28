@@ -1,6 +1,6 @@
 name: docker
 
-# This repo's own compose service definitions (M-134), same pattern
+# This repo's own compose service definitions, same pattern
 # dsh-deploy/oh-my-pi-deploy established: this repo owns the structure
 # (image, volumes, environment); the including compose file
 # (local-ai-machine's docker/docker-compose.yml) supplies only
@@ -8,7 +8,7 @@ name: docker
 #
 # Three services, two images: jmfederico-pi-web and
 # pi-web-factory-orchestrator both run the SAME image built from this
-# repo's root Dockerfile (pi-web-factory is baked into it, M-068) — the
+# repo's root Dockerfile (pi-web-factory is baked into it) — the
 # orchestrator is a separate, independently-restartable read-only UI over
 # pi-web-factory's trace db, not a second process bolted onto the main
 # container. pi-web-session-watcher is a genuinely separate service with
@@ -31,9 +31,8 @@ services:
     volumes:
       - ${SHARED_WORKSPACE_DIR}:/work
       - ${PI_WEB_HOME_DIR}:/home/piweb/.pi-web
-      # GitHub App private key (M-134) — read-only, consumed by
-      # docker-entrypoint.sh's credential-helper setup. Replaces the old
-      # /home/chris/.ssh:/home/piweb/.ssh mount.
+      # GitHub App private key — read-only, consumed by
+      # docker-entrypoint.sh's credential-helper setup.
       - ${GITHUB_APP_PRIVATE_KEY_HOST_PATH}:/run/secrets/github-app-agent-key.pem:ro
       - ${DOCKER_SOCK_PATH:-/var/run/docker.sock}:/var/run/docker.sock
     labels:
@@ -56,25 +55,23 @@ services:
       # end chasing a code bug that didn't exist). Loopback avoids the
       # hairpin entirely.
       - PI_WEB_FACTORY_BASE_URL=http://127.0.0.1:3000/api
-      # M-094/M-121: pi-web-factory's own Workflow-Step wait-loop timeout
+      # pi-web-factory's own Workflow-Step wait-loop timeout
       # (modules/piwebClient.ts's waitForCompletion). Must match
       # pi-web-factory-orchestrator's PI_WEB_FACTORY_STEP_TIMEOUT_MS below
       # — orchestrator's reconciliation pass reuses this exact value as its
-      # staleness threshold. Real incident (2026-08-13): these drifted and
-      # the reconciliation sweep force-failed a genuinely in-progress
-      # review step at ~5min because ITS threshold was 2min while the
-      # runner's own budget was 10min. Both raised to 1800000 (30min)
-      # together by M-121 (2026-08-17) — see that ticket for the full
-      # incident.
+      # staleness threshold. Real incident (2026-08-13): if these two ever
+      # drift apart, the reconciliation sweep can force-fail a genuinely
+      # in-progress step whose own runner budget hasn't actually expired
+      # yet. Keep both at the same value (currently 1800000 / 30min).
       - PI_WEB_FACTORY_STEP_TIMEOUT_MS=${PI_WEB_FACTORY_STEP_TIMEOUT_MS:-1800000}
-      # M-109: durable-mount allowlist for modules/worktree.ts's
-      # createRunWorktree pre-flight guard. This container has exactly ONE
-      # writable bind mount that survives a container recreate for project
-      # roots — /work (above). Real incident: a project registered outside
-      # this mount had 4 real Workflow Runs' worktrees/branches silently
-      # lost on the next recreate (M-109). Deliberately does NOT include
-      # /home/piweb/.pi-web (also durable) — that's pi-web's own config
-      # dir, never a valid project root.
+      # Durable-mount allowlist for modules/worktree.ts's createRunWorktree
+      # pre-flight guard. This container has exactly ONE writable bind mount
+      # that survives a container recreate for project roots — /work
+      # (above). Real incident: a project registered outside this mount had
+      # 4 real Workflow Runs' worktrees/branches silently lost on the next
+      # recreate. Deliberately does NOT include /home/piweb/.pi-web (also
+      # durable) — that's pi-web's own config dir, never a valid project
+      # root.
       - PI_WEB_FACTORY_DURABLE_MOUNTS=/work
       # @juicesharp/rpiv-web-tools (see settings.seed.json's packages
       # array): reuses the SearxNG instance already running in
@@ -166,7 +163,7 @@ services:
     network_mode: host
     environment:
       - PI_WEB_WATCHER_BASE_URL=${PI_WEB_WATCHER_BASE_URL:-http://127.0.0.1:8080}
-      # Comma-separated list of session IDs to watch (M-116). Defaults to
+      # Comma-separated list of session IDs to watch. Defaults to
       # app/config.py's own built-in default if unset.
       - PI_WEB_WATCHER_SESSION_IDS=${PI_WEB_WATCHER_SESSION_IDS:-}
       - PI_WEB_WATCHER_CWD=${PI_WEB_WATCHER_CWD:-/work/local-ai-machine}
