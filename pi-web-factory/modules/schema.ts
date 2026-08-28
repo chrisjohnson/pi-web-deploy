@@ -35,8 +35,8 @@
  *   - `phases.output_summary` — a Step's short outcome summary (§7.3: "an
  *     agent step's envelope `summary`, a code step's gate result headline").
  *
- * ── M-103: `tickets` table + `sessions.ticket_id` ─────────────────────────
- * M-103 adds a `tickets` table — the grouping anchor for "conceptually the
+ * ── `tickets` table + `sessions.ticket_id` ─────────────────────────────────
+ * The `tickets` table is the grouping anchor for "conceptually the
  * same job, retried N times" (a ticket has many runs/`sessions` rows, always
  * exactly one ticket per run, no run without a ticket — see
  * `modules/ticket.ts`). `ticket_id` is a plain string, deliberately NOT
@@ -50,7 +50,7 @@
  * migration needed) even though every NEW run always sets it — see
  * `modules/ticket.ts`'s `mintOrAttachTicket`.
  *
- * ── M-121: `phases.artifact_json` ─ a completed Step's real output ───────────
+ * ── `phases.artifact_json` ─ a completed Step's real output ─────────────────
  * Written by `modules/tracer.ts`'s `Tracer.stepArtifact` the moment an
  * `agent` Step (`workflow.ts`'s `runAgentStep`) reaches a terminal SUCCESS
  * outcome ─ not just at run end ─ specifically so a LATER Step's failure can
@@ -59,9 +59,9 @@
  * `review` Step hit a `waitForCompletion` timeout and failed the whole run,
  * with nothing in the run's own record pointing back at the build's real
  * work). Holds a small JSON object ─ `{branch, commitSha, prUrl}` ─ never
- * raw trace events. `prUrl` is null until a future auto-PR Step (M-118)
+ * raw trace events. `prUrl` is null until a future auto-PR Step
  * populates it; the shape is deliberately forward-compatible with that
- * rather than needing a second migration once M-118 lands.
+ * rather than needing a second migration once one does.
  *
  * **This one is NOT purely additive at the SQL level** — unlike every prior
  * column added to this file (`sessions.title`, `phases.output_summary`,
@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   started_at    TEXT, ended_at TEXT,
   total_tokens  INTEGER DEFAULT 0, total_cost REAL DEFAULT 0,
   archived      INTEGER DEFAULT 0,   -- review triage, set by the UI; never by a run
-  ticket_id     TEXT REFERENCES tickets  -- M-103: every run belongs to exactly one ticket (additive/nullable at the SQL level; every NEW run always sets it — see modules/ticket.ts)
+  ticket_id     TEXT REFERENCES tickets  -- every run belongs to exactly one ticket (additive/nullable at the SQL level; every NEW run always sets it — see modules/ticket.ts)
 );
 CREATE TABLE IF NOT EXISTS phases (
   phase_id      TEXT PRIMARY KEY,
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS phases (
   output_tokens INTEGER,
   cached_tokens INTEGER,
   output_summary TEXT,               -- M-074: short outcome summary (agent step's envelope summary, or a code step's gate headline)
-  artifact_json TEXT,                -- M-121: {branch, commitSha, prUrl} for a completed Step's real output — see module header
+  artifact_json TEXT,                -- {branch, commitSha, prUrl} for a completed Step's real output — see module header
   started_at    TEXT, ended_at TEXT
 );
 CREATE TABLE IF NOT EXISTS events (
@@ -185,7 +185,7 @@ export const PRAGMAS = [
 ];
 
 /**
- * M-121: real, idempotent column migrations — the actual fix for the gap
+ * Real, idempotent column migrations — the actual fix for the gap
  * `CREATE TABLE IF NOT EXISTS` leaves open (see this file's module header,
  * "This one is NOT purely additive" section, for the full incident this was
  * caught from). No separate migration-runner/versioning table exists
@@ -259,10 +259,10 @@ export function runMigrations(db: MigratableDb): void {
 }
 
 /**
- * M-121 (2026-08-17 hotfix): applies `SCHEMA` then `runMigrations` to an
- * ALREADY-OPEN, writable `db` handle — the one place both real callers that
- * need "this db file's schema is fully current" should go through, so the
- * two steps can never be applied out of order or have one forgotten.
+ * Applies `SCHEMA` then `runMigrations` to an ALREADY-OPEN, writable `db`
+ * handle — the one place both real callers that need "this db file's
+ * schema is fully current" should go through, so the two steps can never
+ * be applied out of order or have one forgotten.
  *
  * Filed directly from a production incident: `Tracer`'s constructor called
  * both steps correctly, but `orchestrator/server.ts` opened its OWN raw

@@ -78,7 +78,7 @@
  * whether writes into it are governed. That's an accepted, documented
  * tradeoff, not an oversight.
  *
- * ── Durable-mount pre-flight guard (M-109) ───────────────────────────────
+ * ── Durable-mount pre-flight guard ────────────────────────────────────────
  * The "reached through exactly ONE bind mount" assumption above (see
  * "Location") was written down but never actually ENFORCED — nothing
  * stopped a project from being registered/operated on at a path outside
@@ -88,7 +88,7 @@
  * Runs against it — including creating real worktrees/branches via this
  * very module — and every bit of that work was silently wiped on the next
  * container recreate. No error, no warning, right up until the directory
- * itself was gone (M-109 card, full incident detail).
+ * itself was gone.
  *
  * `createRunWorktree` now calls `assertDurableProjectPath` FIRST, before
  * doing anything else (including the pre-existing `.git` check) — a
@@ -111,17 +111,17 @@
  *
  * Written as its own small, separately-callable function (not inlined into
  * `createRunWorktree`) so a second pre-flight check can be added next to it
- * without restructuring — M-115 (a "real `.git` root" guard) is expected to
- * land here shortly after, as a sibling check run from the same call site.
+ * without restructuring — a "real `.git` root" guard lands here as a
+ * sibling check run from the same call site.
  *
- * ── Real single-repo-root guard (M-115) ───────────────────────────────────
+ * ── Real single-repo-root guard ────────────────────────────────────────────
  * `createRunWorktree` already required `.git` to exist directly under
- * `projectPath` before this card (a bare `existsSync(join(projectPath,
+ * `projectPath` (a bare `existsSync(join(projectPath,
  * ".git"))` check) — read closely, that logic is ALREADY the right shape: it
  * rejects `/work` itself (the whole bind mount, no `.git` of its own) exactly
  * as correctly as a project actually scoped to one real repo (`/work/<repo>`,
- * which does have `.git`). So M-115 does not change the underlying logic.
- * What it DOES fix: the bare message that check threw
+ * which does have `.git`). So this guard does not change the underlying
+ * logic. What it DOES fix: the bare message that check threw
  * (`"${projectPath} does not look like a git checkout (no .git found) —
  * cannot create a worktree"`) reads like a generic/incidental git-plumbing
  * failure — indistinguishable, to a human or an agent reading a stack trace,
@@ -188,7 +188,7 @@ export function durableMountsFromEnv(): string[] {
 /**
  * Fails fast (throws `WorktreeError`) when `projectPath` does not live
  * under any configured durable mount — see module docstring ("Durable-mount
- * pre-flight guard", M-109) for the full incident/rationale. A no-op when
+ * pre-flight guard") for the full incident/rationale. A no-op when
  * `PI_WEB_FACTORY_DURABLE_MOUNTS` is unset/empty (no allowlist configured
  * — e.g. local dev, `bun test`), by design.
  *
@@ -208,7 +208,7 @@ export function assertDurableProjectPath(projectPath: string, mounts: string[] =
   if (!isCovered) {
     throw new WorktreeError(
       `project path ${projectPath} is not under any durable mount (allowed: ${mounts.join(", ")}) — refusing to create a worktree here. ` +
-        `A path outside every durable mount is wiped on the next container recreate, silently losing any worktree/branch created against it (M-109). ` +
+        `A path outside every durable mount is wiped on the next container recreate, silently losing any worktree/branch created against it. ` +
         `Register this project under one of the allowed mount(s) instead, or add its real durable mount to ${DURABLE_MOUNTS_ENV_VAR}.`,
     );
   }
@@ -217,7 +217,7 @@ export function assertDurableProjectPath(projectPath: string, mounts: string[] =
 /**
  * Fails fast (throws `WorktreeError`) when `projectPath` is not a real,
  * single-repo root — i.e. does not have its own `.git` directly at that
- * path. See module docstring ("Real single-repo-root guard", M-115) for why
+ * path. See module docstring ("Real single-repo-root guard") for why
  * this exists as its own named function rather than staying an inline
  * `existsSync` check: the underlying condition is unchanged from
  * `createRunWorktree`'s original bare check, but the error message here is
@@ -293,7 +293,7 @@ export interface CreateRunWorktreeResult {
  *
  * Runs `assertDurableProjectPath` and `assertRealRepoRoot` FIRST, ahead of
  * every other check, in that order — see module docstring ("Durable-mount
- * pre-flight guard", M-109, and "Real single-repo-root guard", M-115): a
+ * pre-flight guard" and "Real single-repo-root guard"): a
  * project path outside every configured durable mount, or one that is not a
  * real single-repo root (no `.git` of its own — e.g. `/work` itself), must
  * both be refused before any worktree/branch gets created, not after.
