@@ -1,10 +1,9 @@
 /**
  * Unit tests for cli.ts's argument-parsing/prompt-resolution/status-line
- * logic — the parts that don't need a live pi-web server. M-067 card, Plan
- * item 4 ("you may also add a lightweight automated test ... if you think it
- * adds real value"). The manual smoke test (real terminal run against a real
- * scratch project) covers the actual end-to-end wiring; this covers the
- * argument-shape edge cases that are tedious to exercise by hand every time.
+ * logic — the parts that don't need a live pi-web server. The manual smoke
+ * test (real terminal run against a real scratch project) covers the actual
+ * end-to-end wiring; this covers the argument-shape edge cases that are
+ * tedious to exercise by hand every time.
  */
 
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -165,7 +164,7 @@ describe("resolvePrompt", () => {
   });
 });
 
-// ── browserOriginFromApiBaseUrl / sessionDeepLink (M-071) ──────────────────
+// ── browserOriginFromApiBaseUrl / sessionDeepLink ───────────────────────────
 
 describe("browserOriginFromApiBaseUrl", () => {
   test("strips a trailing /api from the API base URL", () => {

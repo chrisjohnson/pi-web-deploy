@@ -1,11 +1,10 @@
 #!/usr/bin/env bun
 /**
  * cli.ts: the manually-triggered entrypoint for pi-web-factory — design doc
- * §0 point 2, §3.4 ("the ticket-layer seam"), M-067 card. `--chain` renamed
- * to `--workflow` by M-076, matching the design doc §7 terminology
- * ("Workflow" replaces "chain" everywhere) — the underlying registry
- * (`chains/registry.ts`) now resolves both generic-interpreter-driven YAML
- * Workflows AND the one remaining hand-written chain
+ * §0 point 2, §3.4 ("the ticket-layer seam"). `--workflow` matches the
+ * design doc §7 terminology ("Workflow" replaces "chain" everywhere) — the
+ * underlying registry (`chains/registry.ts`) resolves both generic-
+ * interpreter-driven YAML Workflows AND the one remaining hand-written chain
  * (`chains/planBuildTest.ts`) behind the SAME name, so this flag covers
  * every runnable shape regardless of how it's implemented.
  *
@@ -15,7 +14,7 @@
  *
  *   bun cli.ts --project <abs-path> --workflow <name> [--session-id <id>] "<prompt or path/to/prompt.md>"
  *
- * M-104 adds a second, standalone invocation mode — no run performed:
+ * There is also a second, standalone invocation mode — no run performed:
  *
  *   bun cli.ts --list-workflows
  *
@@ -23,10 +22,9 @@
  * `description` (`chains/registry.ts`'s `WORKFLOW_DESCRIPTIONS`), exits 0.
  * This is the self-describing registry `skills/pi-web-factory/SKILL.md`
  * shells out to at routing time instead of embedding a static, hand-
- * maintained table — see that skill file and M-104's card for the full
- * reasoning.
+ * maintained table — see that skill file for the full reasoning.
  *
- * M-115 adds a THIRD standalone invocation mode — no run performed, on-demand
+ * A THIRD standalone invocation mode exists too — no run performed, on-demand
  * reconciliation of stale pi-web project registrations (a real directory that
  * no longer exists, or a registered path that isn't a real single-repo root —
  * see `modules/projectReconcile.ts`):
@@ -60,7 +58,7 @@
  *
  * This file is deliberately a thin wrapper — argument parsing, config/
  * registry lookups, and I/O only. All real execution logic lives in
- * `modules/workflow.ts` (the generic interpreter, M-076) and `chains/`
+ * `modules/workflow.ts` (the generic interpreter) and `chains/`
  * (`planBuildTest.ts`, the one remaining hand-written chain).
  *
  * When the future `.fleet`-lite ticket-queue worker exists (design doc §3.4),
@@ -86,7 +84,7 @@ export interface ParsedArgs {
   project: string;
   workflow: string;
   sessionId?: string;
-  /** M-103: optional ticket to attach this run to (an existing internal ticket_<hex> id, or an external id like a `.fleet` board id). Omitted -> a fresh internal ticket is minted for this run. This is the mechanism a human resuming a run, or a future automated retry, uses to keep multiple attempts grouped under one ticket. */
+  /** Optional ticket to attach this run to (an existing internal ticket_<hex> id, or an external id like a `.fleet` board id). Omitted -> a fresh internal ticket is minted for this run. This is the mechanism a human resuming a run, or a future automated retry, uses to keep multiple attempts grouped under one ticket. */
   ticketId?: string;
   promptArg: string;
 }
@@ -105,13 +103,13 @@ const USAGE =
 
 /**
  * Parses `argv` (i.e. everything after `bun cli.ts`) into `--project`,
- * `--workflow`, `--session-id` (optional), `--ticket-id` (optional, M-103),
+ * `--workflow`, `--session-id` (optional), `--ticket-id` (optional),
  * and exactly one positional prompt-or-path argument. Throws `CliUsageError`
  * (never a bare stack trace) for anything malformed — unknown flags, missing
  * required flags, a missing flag value, more than one positional argument, or
  * zero positional arguments.
  *
- * `--list-workflows` (M-104) is a standalone mode this function does NOT
+ * `--list-workflows` is a standalone mode this function does NOT
  * handle — `main()` checks for it and returns early BEFORE calling this
  * function at all, since it needs none of the required flags this function
  * enforces (no `--project`/`--workflow`/prompt). See `formatWorkflowList`.
@@ -174,7 +172,7 @@ export function resolvePrompt(promptArg: string): string {
   return promptArg;
 }
 
-// ── deep link (M-071) ────────────────────────────────────────────────────
+// ── deep link ────────────────────────────────────────────────────────────
 
 /**
  * Derives pi-web's browser origin from its own API base URL. `DEFAULT_BASE_URL`
@@ -184,8 +182,7 @@ export function resolvePrompt(promptArg: string): string {
  * client AND its `/api` routes off the SAME host/port, just different path
  * prefixes. So the browser origin is exactly `baseUrl` with a trailing
  * `/api` (only) stripped — derived from the one existing source of truth
- * rather than hardcoding a second copy of the host/port here, per this
- * card's explicit instruction not to duplicate that string.
+ * rather than hardcoding a second copy of the host/port here.
  */
 export function browserOriginFromApiBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith("/api") ? baseUrl.slice(0, -"/api".length) : baseUrl;
@@ -294,7 +291,7 @@ export function describeResult(result: WorkflowResultBase, baseUrl: string = DEF
       };
     }
     case "review-rejected": {
-      // M-080: a no-loop Workflow's review step explicitly did not approve —
+      // A no-loop Workflow's review step explicitly did not approve —
       // distinct from permissions-violation (4) and gate-failed (5) so a
       // human/CI script watching exit codes can tell "review said no" apart
       // from an enforcement/gate failure.
@@ -319,7 +316,7 @@ const DEFAULT_DB_PATH = join(import.meta.dir, "factory.db");
 /**
  * `factory.db` accumulates real observability history across every run — it
  * must NOT default to a path that a deploy mechanism might periodically wipe
- * (M-068's Docker bake-in re-syncs `pi-web-factory`'s own code directory
+ * (the Docker bake-in re-syncs `pi-web-factory`'s own code directory
  * wholesale, `rm -rf` included, on every container start, exactly like the
  * existing `pi-continue-companion`/`pi-web-factory-prompts` plugin/extension
  * syncs already do — see `docker-entrypoint.sh`). `PI_WEB_FACTORY_DB_PATH`
@@ -372,13 +369,13 @@ function resolveTestCwd(projectPath: string): string {
   return process.env["PI_WEB_FACTORY_TEST_CWD"] ?? projectPath;
 }
 
-// ── --list-workflows (M-104) ────────────────────────────────────────────
+// ── --list-workflows ─────────────────────────────────────────────────────
 
 /**
  * Plain-text `name: description` list, one per registered `--workflow` name
  * (`chains/registry.ts`'s `workflowNames()`/`WORKFLOW_DESCRIPTIONS`) — the
  * exact "self-describing registry" a routing caller reads generically
- * instead of a hand-maintained table (M-104's Plan). Plain text, not JSON:
+ * instead of a hand-maintained table. Plain text, not JSON:
  * matches this CLI's existing convention of human/agent-readable stdout
  * lines (the run status line, the "unknown --workflow" error) rather than a
  * structured format nothing else here uses — the intended reader is a
@@ -398,15 +395,15 @@ async function main(): Promise<number> {
     return 0;
   }
 
-  // M-115: on-demand stale-project-registration reconciliation — same
+  // On-demand stale-project-registration reconciliation — same
   // standalone-mode shape as --list-workflows above (checked before
   // parseArgs's required-flag validation, since it needs none of
   // --project/--workflow/prompt either).
   //
   // Dry-run is the DEFAULT — deletion only happens with an explicit --delete.
-  // Flipped deliberately (this card's own verification hit exactly this
-  // footgun once live: a `DELETE` probe against the real deployed server
-  // accidentally removed a real project registration) — matches the "opt-in
+  // Flipped deliberately (verification against the real deployed server once
+  // hit exactly this footgun live: a `DELETE` probe accidentally removed a
+  // real project registration) — matches the "opt-in
   // to danger" posture `orchestrator/server.ts`'s own reconciliation-style
   // passes already use elsewhere in this file (e.g. RETRY_TRIGGER_ENABLED),
   // and is the safer default for a destructive, irreversible-from-this-CLI
@@ -456,10 +453,9 @@ async function main(): Promise<number> {
     // steps get it via their own Role function (roles.ts's `run-tests`
     // reading `project.test` from `projectConfigFor` directly) — cli.ts, as
     // the thin wrapper, is where "look up this project's configured test
-    // command" belongs regardless of which runner ends up using it. As of
-    // M-070 this reads `<project>/.pi-web-factory.yaml` (a file the target
-    // project owns) rather than a centralized map in `config` — `config`
-    // itself is no longer a parameter here.
+    // command" belongs regardless of which runner ends up using it. This
+    // reads `<project>/.pi-web-factory.yaml` (a file the target project
+    // owns) rather than a centralized map in `config`.
     testCmd = projectConfigFor(args.project).test;
   } catch (error) {
     if (error instanceof ConfigError) {
@@ -475,18 +471,17 @@ async function main(): Promise<number> {
   // internally when omitted) so it can be printed and handed to the runner
   // via `adwId`, rather than waiting for the run to finish to learn it. When
   // resuming (--session-id given), the sessionId is already known too, but
-  // the real working deep-link (project/workspace ids, M-071) is NOT
-  // knowable until the run itself resolves them (workspace resolution needs
-  // a real, already-created worktree path to query pi-web for) — so this
-  // line stays a short "starting/resuming" progress note, and the full link
-  // prints once via `describeResult` after the run returns (both success and
-  // every failure branch — replaces the M-067-era "visible in pi-web's own
-  // session picker" placeholder, which was never a REAL working link).
+  // the real working deep-link (project/workspace ids) is NOT knowable
+  // until the run itself resolves them (workspace resolution needs a real,
+  // already-created worktree path to query pi-web for) — so this line stays
+  // a short "starting/resuming" progress note, and the full link prints once
+  // via `describeResult` after the run returns (both success and every
+  // failure branch).
   const adwId = `adw_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
   console.log(
     `${args.sessionId ? "resuming" : "starting"} workflow ${JSON.stringify(args.workflow)}: adwId=${adwId}` +
       (args.sessionId ? ` sessionId=${args.sessionId}` : " sessionId=(minting a fresh pi-web session...)") +
-      // M-103: ticketId isn't known until sessionStart resolves it (a fresh
+      // ticketId isn't known until sessionStart resolves it (a fresh
       // internal id is minted there when --ticket-id is omitted) — this line
       // only echoes what was EXPLICITLY passed, never guesses the minted one.
       (args.ticketId ? ` ticketId=${args.ticketId}` : " ticketId=(minting a fresh ticket...)"),
