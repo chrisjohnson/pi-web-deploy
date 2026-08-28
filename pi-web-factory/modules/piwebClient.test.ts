@@ -74,7 +74,7 @@ describe("roleMarker / roleMarkerPrompt", () => {
   });
 });
 
-// M-112: waitForCompletion's status->messages race. Root cause: pi-web's own
+// waitForCompletion's status->messages race. Root cause: pi-web's own
 // `/status` endpoint flips `isStreaming` to false a moment BEFORE the final
 // assistant message's text is durably persisted/queryable via `/messages` —
 // a caller that reads messages the instant isStreaming goes false can race
@@ -83,7 +83,7 @@ describe("roleMarker / roleMarkerPrompt", () => {
 // `forcePollOnly: true` so only the status-polling path (where the race was
 // diagnosed) is exercised, per the same convention run.test.ts's own
 // mockFetchSequence helper uses.
-describe("waitForCompletion — settled-message race mitigation (M-112)", () => {
+describe("waitForCompletion — settled-message race mitigation", () => {
   const baseUrl = "http://fake-pi-web.test/api";
   const sessionId = "sess_race";
   let originalFetch: typeof fetch;
@@ -116,7 +116,7 @@ describe("waitForCompletion — settled-message race mitigation (M-112)", () => 
         const messages = messagesSequence[Math.min(messagesCalls, messagesSequence.length - 1)]!;
         messagesCalls += 1;
         // Real pi-web wraps this in a MessagePage envelope, not a bare
-        // array — confirmed live 2026-08-13 (M-114 follow-up).
+        // array — confirmed live.
         return new Response(JSON.stringify({ messages, start: 0, total: messages.length }), { status: 200 });
       }
       throw new Error(`unexpected fetch to ${url}`);

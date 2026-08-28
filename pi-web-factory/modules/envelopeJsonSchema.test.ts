@@ -12,7 +12,7 @@ import {
 import { envelopeSchemas } from "./envelopes.ts";
 import { loadRolesConfig } from "./roles.ts";
 
-/** `pi-web-factory/generated-json-schemas/` — same directory `generate-litellm-schemas.ts` writes to (its own `resolve(here, "generated-json-schemas")`, `here` being `pi-web-factory/`), resolved from THIS file's own location (`modules/`) instead — one directory up. M-134: this repo's own copy, deliberately NOT the same directory local-ai-machine's litellm-bootstrap.sh reads (see generate-litellm-schemas.ts's header for why the two are intentionally decoupled). */
+/** `pi-web-factory/generated-json-schemas/` — same directory `generate-litellm-schemas.ts` writes to (its own `resolve(here, "generated-json-schemas")`, `here` being `pi-web-factory/`), resolved from THIS file's own location (`modules/`) instead — one directory up. This repo's own copy, deliberately NOT the same directory local-ai-machine's litellm-bootstrap.sh reads (see generate-litellm-schemas.ts's header for why the two are intentionally decoupled). */
 const GENERATED_SCHEMA_DIR = join(import.meta.dir, "..", "generated-json-schemas");
 
 /** Recursively asserts every `type: "object"` node in a JSON Schema carries `additionalProperties: false` and lists every one of its own `properties` keys in `required` — the two properties litellm/OpenAI strict `json_schema` mode actually needs, checked structurally rather than trusting `z.toJSONSchema`'s defaults blindly. */
@@ -96,7 +96,7 @@ describe("allResponseFormats", () => {
     }
   });
 
-  test("every jsonSchemaRoles key names an agent Role that actually exists in factory.config.yaml, and vice versa for the five envelopeSchemas-backed Steps — catches drift between the two files (M-113 Plan step 2)", () => {
+  test("every jsonSchemaRoles key names an agent Role that actually exists in factory.config.yaml, and vice versa for the five envelopeSchemas-backed Steps — catches drift between the two files", () => {
     const config = loadRolesConfig("factory.config.yaml");
     const configuredAgentRoleNames = new Set(config.roles.filter((r) => r.kind === "agent").map((r) => r.name));
 

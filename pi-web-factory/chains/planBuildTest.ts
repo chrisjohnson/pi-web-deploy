@@ -175,7 +175,7 @@ export interface PlanBuildTestOptions {
    */
   mainCheckoutPath?: string;
   engineer?: string;
-  /** M-103: the ticket this run belongs to — see modules/workflow.ts's `WorkflowRunOptions.ticketId` for the full doc comment (identical semantics, ported here so this chain's runs get a ticket the same way the generic interpreter's do). */
+  /** The ticket this run belongs to — see modules/workflow.ts's `WorkflowRunOptions.ticketId` for the full doc comment (identical semantics, ported here so this chain's runs get a ticket the same way the generic interpreter's do). */
   ticketId?: string;
 }
 
@@ -271,11 +271,11 @@ export async function planBuildTest(opts: PlanBuildTestOptions): Promise<PlanBui
   // worktree's own path as a separate pi-web Project would be wrong (see
   // that function's doc comment).
   const mainCheckoutPath = opts.mainCheckoutPath ?? resolveMainCheckoutPath(opts.cwd);
-  // M-115: validate BEFORE registering with pi-web — see workflow.ts's
-  // runWorkflow, the identical fix, for the full "why" (closing the
-  // register-before-validate ordering gap that let /work-shaped paths get
-  // registered as a pi-web Project before any guard ran). createRunWorktree
-  // below still runs its own copy of these same checks (defense in depth).
+  // Validate BEFORE registering with pi-web — see workflow.ts's
+  // runWorkflow for the identical ordering: registering before validating
+  // would let /work-shaped paths get registered as a pi-web Project before
+  // any guard ran. createRunWorktree below still runs its own copy of
+  // these same checks (defense in depth).
   assertDurableProjectPath(mainCheckoutPath);
   assertRealRepoRoot(mainCheckoutPath);
   const { projectId } = await ensureProjectRegistered(baseUrl, mainCheckoutPath);

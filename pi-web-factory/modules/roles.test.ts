@@ -15,14 +15,14 @@ describe("the shipped factory.config.yaml", () => {
     expect(config.roles.length).toBeGreaterThan(0);
   });
 
-  test("covers all five agent identities (plan, build, review, scout, document) plus decide-retry (M-103) plus at least one code role", () => {
+  test("covers all five agent identities (plan, build, review, scout, document) plus decide-retry plus at least one code role", () => {
     const config = loadRolesConfig(REAL_CONFIG_PATH);
     const agentNames = config.roles.filter((r) => r.kind === "agent").map((r) => r.name).sort();
-    // decide-retry (M-103) is a real sixth agent Role — a narrow
-    // classification Role, not one of envelopeSchemas' five Workflow-Step
-    // identities (it's never looked up via envelopeSchemaForRole, see
-    // retryDecision.ts's own RetryDecisionOutputSchema) — included here
-    // deliberately, not a stale assumption left unfixed.
+    // decide-retry is a real sixth agent Role — a narrow classification
+    // Role, not one of envelopeSchemas' five Workflow-Step identities (it's
+    // never looked up via envelopeSchemaForRole, see retryDecision.ts's own
+    // RetryDecisionOutputSchema) — included here deliberately, not a stale
+    // assumption left unfixed.
     expect(agentNames).toEqual(["build", "decide-retry", "document", "plan", "review", "scout"]);
 
     const codeNames = config.roles.filter((r) => r.kind === "code").map((r) => r.name);
@@ -83,8 +83,8 @@ describe("the shipped factory.config.yaml", () => {
     const text = readFileSync(REAL_CONFIG_PATH, "utf8");
     const config = loadRolesConfigFromString(text, "factory.config.yaml", join(import.meta.dir, ".."));
     // 6 agent roles: the original 5 (plan/build/review/scout/document) plus
-    // decide-retry (M-103) — see the "covers all five agent identities..."
-    // test above for the full reasoning on why this count grew.
+    // decide-retry — see the "covers all five agent identities..." test
+    // above for the full reasoning on why this count grew.
     expect(config.roles.filter((r) => r.kind === "agent").length).toBe(6);
   });
 });

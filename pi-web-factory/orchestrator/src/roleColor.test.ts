@@ -1,10 +1,10 @@
 /**
- * roleColor.test.ts: unit tests for the Role -> color mapping (M-105 Phase
- * A rewrite — see roleColor.ts's own doc comment). Every known Role must
- * map to its own distinct, STABLE color; an unrecognized/future Role name
- * must STILL get a complete, real generated palette (never a bare neutral
- * fallback — that's the whole point of item 2's "no hand-authoring the next
- * palette" requirement); only `null`/empty falls back to neutral.
+ * roleColor.test.ts: unit tests for the Role -> color mapping (see
+ * roleColor.ts's own doc comment). Every known Role must map to its own
+ * distinct, STABLE color; an unrecognized/future Role name must STILL get
+ * a complete, real generated palette (never a bare neutral fallback —
+ * that's the whole point of the "no hand-authoring the next palette"
+ * requirement); only `null`/empty falls back to neutral.
  */
 
 import { describe, expect, test } from "bun:test";
@@ -52,7 +52,7 @@ describe("roleColor", () => {
     expect(realColors).not.toContain(fallback);
   });
 
-  // ── M-105 item 2: the core "no hand-authoring" requirement ──────────────
+  // ── the core "no hand-authoring" requirement ─────────────────────────────
   test("an unrecognized future Role name gets a REAL generated color, not the neutral fallback", () => {
     const future = roleColor("some-future-role-not-yet-invented");
     const neutral = roleColor(null);

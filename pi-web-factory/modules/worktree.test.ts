@@ -139,7 +139,7 @@ describe("createRunWorktree", () => {
     expect(() => createRunWorktree(dir, "adw_notarepo01")).toThrow(WorktreeError);
   });
 
-  test("the not-a-git-checkout error is the explicit real-repo-root message (M-115), not a generic git-plumbing failure", () => {
+  test("the not-a-git-checkout error is the explicit real-repo-root message, not a generic git-plumbing failure", () => {
     expect(() => createRunWorktree(dir, "adw_notarepo02")).toThrow(/not a real single-repo root/);
   });
 
@@ -162,7 +162,7 @@ describe("createRunWorktree", () => {
   });
 });
 
-// ── durable-mount pre-flight guard (M-109) ──────────────────────────────
+// ── durable-mount pre-flight guard ───────────────────────────────────────
 
 describe("durableMountsFromEnv", () => {
   const original = process.env[DURABLE_MOUNTS_ENV_VAR];
@@ -262,7 +262,7 @@ describe("createRunWorktree — durable-mount enforcement", () => {
   });
 });
 
-describe("assertRealRepoRoot (M-115)", () => {
+describe("assertRealRepoRoot", () => {
   test("passes silently for a real repo root (.git directly present)", () => {
     initRepo(dir);
     expect(() => assertRealRepoRoot(dir)).not.toThrow();

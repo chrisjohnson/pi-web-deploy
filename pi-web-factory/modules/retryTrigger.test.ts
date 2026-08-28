@@ -88,7 +88,7 @@ function mockDecisionFetch(decisionText: string): void {
   }) as typeof fetch;
 }
 
-/** Seeds a real failed run (session + a fail Step) linked to a ticket, matching what a real Workflow Run / M-100 reconciliation would have written. */
+/** Seeds a real failed run (session + a fail Step) linked to a ticket, matching what a real Workflow Run / reconciliation pass would have written. */
 function seedFailedRun(opts: { adwId: string; ticketId: string; adwName?: string; projectCwd?: string; taskPrompt?: string }): void {
   tracer.sessionStart(opts.adwId, {
     projectCwd: opts.projectCwd ?? "/tmp/proj",
@@ -141,7 +141,7 @@ describe("undecidedFailedRuns", () => {
 });
 
 describe("planNextAttempt", () => {
-  test("skips a run with no ticketId (pre-M-103 row)", async () => {
+  test("skips a run with no ticketId (a row predating the ticket system)", async () => {
     const failedRun: FailedRunRow = { adwId: "adw_x", ticketId: null, adwName: "plan-build-review", projectCwd: "/tmp/proj" };
     const plan = await planNextAttempt({ db: tracer.db, config, workflows: [workflowWithRetries(2)], failedRun, baseUrl: BASE_URL });
     expect(plan.outcome).toBe("skipped");

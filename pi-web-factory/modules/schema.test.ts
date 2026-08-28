@@ -1,5 +1,5 @@
 /**
- * Unit tests for schema.ts's `runMigrations` — the real fix for the M-121
+ * Unit tests for schema.ts's `runMigrations` — the real fix for a
  * production incident: `CREATE TABLE IF NOT EXISTS phases (...)` (this
  * file's own `SCHEMA` constant) is a no-op against an ALREADY-EXISTING
  * `phases` table, so it can never retroactively add a column to a real,
@@ -8,8 +8,8 @@
  * `artifact_json` column despite `SCHEMA` already declaring it.
  *
  * Every test here deliberately builds an OLD-SHAPE `phases` table by hand
- * (mirroring the pre-M-121 schema, no `artifact_json` column) — the exact
- * gap that let the original bug ship unnoticed: every other test in this
+ * (mirroring the schema before `artifact_json` was added) — the exact gap
+ * that let the original bug ship unnoticed: every other test in this
  * codebase's suite constructs a brand-new db via `SCHEMA`'s own `CREATE
  * TABLE IF NOT EXISTS`, which genuinely creates the column fresh every
  * time and so never exercises the "upgrading an existing db" path at all.
@@ -34,7 +34,7 @@ afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-/** The pre-M-121 shape of `phases` — every column BEFORE `artifact_json` was added, hand-built to mirror a real, already-deployed production db. */
+/** The shape of `phases` before `artifact_json` was added — every column BEFORE it, hand-built to mirror a real, already-deployed production db. */
 function createOldShapePhasesTable(db: Database): void {
   db.run(`
     CREATE TABLE phases (

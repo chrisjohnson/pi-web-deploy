@@ -1,7 +1,7 @@
 /**
  * palette.test.ts: unit tests for the deterministic hue/mini-palette
- * generator (M-105 item 2's core requirement — "no hand-authoring the next
- * step's palette").
+ * generator (core requirement: "no hand-authoring the next step's
+ * palette").
  */
 
 import { describe, expect, test } from "bun:test";
@@ -54,7 +54,7 @@ describe("hueForName", () => {
     expect(() => hueForName("")).not.toThrow();
   });
 
-  test("M-105 item 1 reopened: review is no longer curated — it now resolves from HUE_RING like any other unlisted name, not from KNOWN_HUES", () => {
+  test("review is no longer curated — it now resolves from HUE_RING like any other unlisted name, not from KNOWN_HUES", () => {
     expect(KNOWN_HUES["review"]).toBeUndefined();
     const hue = hueForName("review");
     expect(HUE_RING).toContain(hue);
@@ -111,7 +111,7 @@ describe("paletteForName", () => {
     expect(palette).toEqual(expected);
   });
 
-  test("a brand new role name still produces a complete, usable palette — the core M-105 item 2 guarantee", () => {
+  test("a brand new role name still produces a complete, usable palette — the core guarantee", () => {
     const palette = paletteForName("a-role-invented-tomorrow", "dark");
     expect(palette.text).toMatch(/^hsl\(/);
     expect(palette.surface).toMatch(/^hsl\(/);

@@ -114,10 +114,10 @@ describe("jsonParses", () => {
     expect(statusIssue?.note).toBeTruthy();
   });
 
-  // M-114 (2026-08-13): some models (medium-moe/Ornith, confirmed live)
-  // reliably wrap otherwise-valid JSON in a markdown fence despite prompt
-  // instructions to return raw JSON only — real, recurring failure mode
-  // independent of the message-settle race also fixed that day.
+  // Some models (medium-moe/Ornith, confirmed live) reliably wrap
+  // otherwise-valid JSON in a markdown fence despite prompt instructions to
+  // return raw JSON only — a real, recurring failure mode independent of
+  // the message-settle race.
   test("JSON wrapped in a ```json fence still parses", () => {
     const envelope = { status: "success", summary: "did it", artifacts: [], notes_for_next_agent: "" };
     const text = "```json\n" + JSON.stringify(envelope) + "\n```";

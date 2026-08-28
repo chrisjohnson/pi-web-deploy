@@ -1,27 +1,26 @@
 /**
  * envelopeJsonSchema.ts: converts `envelopes.ts`'s Zod schemas into the
  * litellm/OpenAI `response_format: {type: "json_schema", json_schema: {...}}`
- * shape (M-113).
+ * shape.
  *
  * ── Why this exists ────────────────────────────────────────────────────────
- * M-113 investigated (and confirmed, empirically, against a real pi-web
- * session) that pi-web has no per-request `response_format` passthrough —
- * dynamic, per-Step schema forcing straight from `envelopes.ts` (Chris's
- * original preference) is not possible with pi-web as it exists today. Chris
- * picked the fallback already proven for `pi-continue` (litellm-role-
- * bundling, `docker/litellm/pi-continue-v4-schema.json` +
+ * Confirmed empirically, against a real pi-web session, that pi-web has no
+ * per-request `response_format` passthrough — dynamic, per-Step schema
+ * forcing straight from `envelopes.ts` (Chris's original preference) is
+ * not possible with pi-web as it exists today. Chris picked the fallback
+ * already proven for `pi-continue` (litellm-role-bundling,
+ * `docker/litellm/pi-continue-v4-schema.json` +
  * `scripts/litellm-bootstrap.sh`'s `CONTINUE_JSON_ROLES`): one DB-backed
  * litellm role per (base-model, schema) pair, carrying the schema HARDCODED
  * into that role's `litellm_params.response_format`. This module is the
- * "generated from envelopes.ts, not hand-written" half of that — see the
- * card's Plan step 1 for the source instruction. `pi-continue-v4-schema.json`
- * stays a separate, hand-maintained file (a different upstream project,
- * `pi-continue`, not `envelopes.ts`) — this module does not touch it.
+ * "generated from envelopes.ts, not hand-written" half of that.
+ * `pi-continue-v4-schema.json` stays a separate, hand-maintained file (a
+ * different upstream project, `pi-continue`, not `envelopes.ts`) — this
+ * module does not touch it.
  *
  * ── Conversion mechanism: Zod v4's own `z.toJSONSchema`, no new dependency ──
- * `package.json` already pins `zod: ^4.4.3` (checked per the card's Plan
- * step 1 instruction to look for a `zod-to-json-schema`-equivalent before
- * adding one) — Zod v4 ships a built-in `z.toJSONSchema()` that produces
+ * `package.json` already pins `zod: ^4.4.3` — Zod v4 ships a built-in
+ * `z.toJSONSchema()` that produces
  * exactly the shape litellm/OpenAI strict-mode `response_format` needs:
  * every property (including ones carrying a Zod `.default()`) lands in the
  * schema's own `required` array, and every object (including nested ones,
@@ -115,9 +114,9 @@ export function allResponseFormats(): Record<string, ResponseFormat> {
 }
 
 /**
- * The litellm role-naming convention (M-113 Plan step 2, Chris's decided
- * option 1): one role per (base-model, schema) pair, named
- * `<baseModel>-<roleName>-json`, mirroring `medium-moe-continue-json`'s
+ * The litellm role-naming convention (Chris's decided option): one role
+ * per (base-model, schema) pair, named `<baseModel>-<roleName>-json`,
+ * mirroring `medium-moe-continue-json`'s
  * existing `-json` suffix pattern (`docker/litellm/config.yaml`'s own
  * naming, `scripts/litellm-bootstrap.sh`'s `CONTINUE_JSON_ROLES`).
  * `baseModel` is the litellm role a factory.config.yaml agent Role's

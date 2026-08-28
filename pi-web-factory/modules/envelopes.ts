@@ -150,7 +150,7 @@ export const DocumentOutputSchema = EnvelopeBaseSchema.extend({
 });
 export type DocumentOutput = z.infer<typeof DocumentOutputSchema>;
 
-// ── RetryDecisionOutput (decide-retry, M-103) ────────────────────────────
+// ── RetryDecisionOutput (decide-retry) ────────────────────────────────────
 
 /**
  * NOT extended from `EnvelopeBaseSchema` — deliberately its own minimal

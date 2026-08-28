@@ -1,9 +1,9 @@
 /**
- * gantt.test.ts: unit tests for the compressed-gap Gantt layout (M-077's
+ * gantt.test.ts: unit tests for the compressed-gap Gantt layout (a
  * central, explicit requirement — idle/paused time between Steps must NOT
- * be drawn to scale) and the M-105 item 11 dynamic-width-fit scale (the
- * whole track must fit a caller-supplied `containerWidthPx`, never overflow
- * it, by deriving pixels-per-second instead of using a fixed constant).
+ * be drawn to scale) and the dynamic-width-fit scale (the whole track must
+ * fit a caller-supplied `containerWidthPx`, never overflow it, by deriving
+ * pixels-per-second instead of using a fixed constant).
  * Runs under plain `bun test` (no DOM needed — this module has none).
  */
 

@@ -45,8 +45,8 @@ export function sortRuns(runs: readonly RunSummary[]): RunSummary[] {
 }
 
 /**
- * M-103: the grid is ticket-level now — sorts tickets by the EXACT SAME
- * rule `sortRuns` already applies to bare runs, keyed off each ticket's
+ * The grid is ticket-level — sorts tickets by the EXACT SAME rule
+ * `sortRuns` already applies to bare runs, keyed off each ticket's
  * `latestRun` (the attempt the grid shows by default). A ticket with no
  * `latestRun` at all (the defensive edge case server.ts's own doc comment
  * flags — shouldn't happen in practice) sorts last, stably, rather than

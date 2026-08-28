@@ -1,4 +1,4 @@
-# factory.config.yaml — pi-web-factory's global Roles registry (M-075).
+# factory.config.yaml — pi-web-factory's global Roles registry.
 #
 # Two kinds of Role, one list (`pi-web-adw-design.md` §7.1/§7.2):
 #   - `kind: agent` — model/thinking/writes (shape ported from upstream SSSF's
@@ -14,7 +14,7 @@
 # extension's real prompt text — NOT placeholder text, and NOT yet unified
 # into one source of truth. See modules/roles.ts's header comment for the
 # full explanation of why (short version: pi-web-factory isn't baked into the
-# jmfederico-pi-web container yet — that's M-068, sequenced after this card).
+# jmfederico-pi-web container yet).
 #
 # Model values are `provider/model-id` strings against this box's real,
 # already-seeded `local-litellm` provider (`jmfederico-pi-web`'s own
@@ -23,7 +23,7 @@
 # validation this shape gets (well-formed `provider/model-id`, NOT reachability
 # — a stale/renamed litellm role is not caught here, see that file's comment).
 #
-# ── `-json`-suffixed model values (M-113) ──────────────────────────────────
+# ── `-json`-suffixed model values ───────────────────────────────────────────
 # Every agent Role below whose name is also an envelopeSchemas/
 # jsonSchemaRoles key (plan/build/review/scout/document/decide-retry) points
 # its `model:` at a DEDICATED litellm role carrying that Role's own envelope
@@ -31,10 +31,10 @@
 # (`docker/litellm/generated-json-schemas/<roleName>.json`, seeded by
 # `scripts/litellm-bootstrap.sh`'s `PI_WEB_FACTORY_JSON_ROLES` map) — NOT the
 # bare `big-moe`/`medium-moe` role. This is Chris's accepted fallback for
-# pi-web having no per-request response_format passthrough (see the M-113
-# card): the model's own decoding grammar is constrained litellm-side,
-# instead of pi-web-factory forcing the shape per-request (which pi-web's
-# API has no field for). Reassigning which PHYSICAL backend answers e.g.
+# pi-web having no per-request response_format passthrough: the model's own
+# decoding grammar is constrained litellm-side, instead of pi-web-factory
+# forcing the shape per-request (which pi-web's API has no field for).
+# Reassigning which PHYSICAL backend answers e.g.
 # `medium-moe-build-json` still goes through `scripts/set-role.sh` exactly
 # like any other role — only the Role's EXISTENCE (and schema) is this
 # file's concern.
@@ -118,10 +118,10 @@ roles:
     kind: code
     function: run-tests
 
-  # M-103: retry/new-run/give-up classification for a failed Workflow Run —
-  # a narrow decision, not a judgment-heavy one like plan/review, so it uses
+  # retry/new-run/give-up classification for a failed Workflow Run — a
+  # narrow decision, not a judgment-heavy one like plan/review, so it uses
   # medium-moe (this codebase's cheaper of the two live model tiers, not
-  # big-moe) per the card's own instruction ("doesn't need a strong model").
+  # big-moe): this classification doesn't need a strong model.
   # low thinking: a bounded classification over a compact evidence summary,
   # not open-ended reasoning over a full codebase.
   - name: decide-retry

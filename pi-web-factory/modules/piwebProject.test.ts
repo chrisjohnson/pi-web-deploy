@@ -230,7 +230,7 @@ describe("listProjects", () => {
   });
 });
 
-// ── deleteProject (M-115) ────────────────────────────────────────────────
+// ── deleteProject ────────────────────────────────────────────────────────
 
 describe("deleteProject", () => {
   test("DELETEs /projects/:id and resolves — real deployed response shape is {closed:true}", async () => {

@@ -93,18 +93,15 @@ export async function listProjects(baseUrl: string): Promise<PiWebProject[]> {
 }
 
 /**
- * `DELETE /projects/:id` — deregisters a project from pi-web (M-115, Plan
- * item 2: the stale-project-registration reconciliation pass below needs a
- * real deletion mechanism). Confirmed to exist and behave as expected
- * against the live deployed server, 2026-08-18 (not assumed/speculative —
- * this card's own Plan explicitly called for confirming this before building
- * a delete-capable pass rather than a report-only one): `DELETE
+ * `DELETE /projects/:id` — deregisters a project from pi-web; the
+ * stale-project-registration reconciliation pass below needs a real
+ * deletion mechanism. Confirmed to exist and behave as expected against
+ * the live deployed server, 2026-08-18 (not assumed/speculative): `DELETE
  * /projects/:id` for a real, existing project id returns `200`; for an
  * unknown id it returns `404` with `{"error":"Project not found"}`. This
  * does NOT touch anything on disk (the project's own directory, `.git`,
- * worktrees) — it only removes pi-web's own registration entry, exactly the
- * "dead weight in pi-web's own project list" this card describes, nothing
- * more.
+ * worktrees) — it only removes pi-web's own registration entry, i.e. dead
+ * weight in pi-web's own project list, nothing more.
  */
 export async function deleteProject(baseUrl: string, projectId: string): Promise<void> {
   await requestJson<unknown>(`${baseUrl}/projects/${encodeURIComponent(projectId)}`, { method: "DELETE" });

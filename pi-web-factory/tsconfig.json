@@ -27,7 +27,6 @@
   // here so the root-level `tsc --noEmit` (server/CLI/module code, `lib:
   // ESNext` only, no DOM) stays clean. orchestrator/server.ts itself is NOT
   // excluded — it's ordinary Bun server code and belongs in this project's
-  // main typecheck scope like every other module. (Renamed from
-  // `visualizer/`, M-105 item 9.)
+  // main typecheck scope like every other module.
   "exclude": ["orchestrator/src", "node_modules"]
 }

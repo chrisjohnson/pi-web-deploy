@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * generate-litellm-schemas.ts (M-113): writes one JSON file per
+ * generate-litellm-schemas.ts: writes one JSON file per
  * `modules/envelopeJsonSchema.ts`'s `jsonSchemaRoles` entry into
  * `generated-json-schemas/<roleName>.json` — the full litellm/OpenAI
  * `response_format` object (`{type: "json_schema", json_schema: {name,
@@ -11,8 +11,8 @@
  * local-ai-machine's `scripts/litellm-bootstrap.sh` runs on the litellm
  * host directly (no bun/node runtime assumed there) and keeps its OWN
  * independently-committed copy at `docker/litellm/generated-json-schemas/`
- * — deliberately NOT read from this repo (M-134: the two extracted repos
- * don't reach across the split to read each other's generated output; if
+ * — deliberately NOT read from this repo: the two extracted repos don't
+ * reach across the split to read each other's generated output; if
  * envelopes.ts changes here, someone re-runs this generator, reviews the
  * diff, and separately updates local-ai-machine's own copy by hand, same
  * as any other cross-repo schema change — see envelopes.ts for whether

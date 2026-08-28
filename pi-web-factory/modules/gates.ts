@@ -83,10 +83,10 @@ export function filesNonEmpty(paths: string[], cwd: string): GateReport {
  * Strips a single top-level markdown code fence (```json\n...\n``` or
  * ```\n...\n```) if `text` is wrapped in exactly one, despite every Role
  * prompt explicitly asking for raw JSON only. Returns `text` unchanged if
- * it isn't fenced. M-114 (2026-08-13): confirmed live, a real, recurring
- * failure mode independent of the message-settle race also fixed that
- * day — some models (medium-moe/Ornith observed directly) reliably wrap
- * otherwise-valid JSON in fences regardless of prompt instructions.
+ * it isn't fenced. Confirmed live: a real, recurring failure mode
+ * independent of the message-settle race — some models (medium-moe/Ornith
+ * observed directly) reliably wrap otherwise-valid JSON in fences
+ * regardless of prompt instructions.
  */
 function stripMarkdownFences(text: string): string {
   const trimmed = text.trim();

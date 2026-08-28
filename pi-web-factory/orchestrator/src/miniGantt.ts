@@ -9,13 +9,12 @@
  * `auto-fill`/`minmax` — a fixed-px mini timeline would either overflow
  * narrow cards or look tiny in wide ones).
  *
- * Bar color is Role identity, not status (found missing in review, M-090
- * follow-up, 2026-08-05 — see `stepBarStyle.ts`'s doc comment for the full
- * story): every bar's fill is that Step's Role color in some form, in every
- * state, so the same Role reads identically here and on the detail page's
- * full Gantt. A separate per-Step "role dot" used to carry this instead —
- * removed now that the bar itself does, which also means fewer DOM nodes
- * per card (point 7's performance ask).
+ * Bar color is Role identity, not status (see `stepBarStyle.ts`'s doc
+ * comment for the full reasoning): every bar's fill is that Step's Role
+ * color in some form, in every state, so the same Role reads identically
+ * here and on the detail page's full Gantt. This also means fewer DOM
+ * nodes per card than a separate per-Step "role dot" would need, which
+ * matters for render performance on a grid with many cards.
  */
 
 import type { Step } from "./api";
@@ -25,8 +24,8 @@ import { escapeHtml } from "./format";
 
 /**
  * Reference width (px) fed to `computeGanttLayout` for the mini-Gantt's own
- * scale derivation (M-105 item 11 made the scale a function of container
- * width). This is NOT the actual rendered width — since this module
+ * scale derivation (the scale is a function of container width). This is
+ * NOT the actual rendered width — since this module
  * immediately converts every coordinate to a PERCENTAGE of the computed
  * `totalWidth` (see below), only the resulting *proportions* matter here,
  * not the absolute px value, so a fixed representative width is fine; a

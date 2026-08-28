@@ -116,7 +116,7 @@ describe("sortRuns", () => {
   });
 });
 
-describe("sortTickets (M-103)", () => {
+describe("sortTickets", () => {
   test("orders tickets by the SAME rule sortRuns applies to their latestRun", () => {
     const t1 = mkTicket({ ticketId: "t1", latestRun: mkRun({ adwId: "a", status: "success", endedAt: "2026-01-01T00:00:00.000Z" }) });
     const t2 = mkTicket({ ticketId: "t2", latestRun: mkRun({ adwId: "b", status: "running", startedAt: "2026-01-01T05:00:00.000Z" }) });

@@ -1,6 +1,6 @@
 /**
- * attemptNav.ts: the small "page through a ticket's attempts" arrow control
- * (M-103) — shared markup/wiring between the grid card (`listView.ts`) and
+ * attemptNav.ts: the small "page through a ticket's attempts" arrow
+ * control — shared markup/wiring between the grid card (`listView.ts`) and
  * the ticket detail page (`detailView.ts`), so the same subtle affordance
  * (Chris, explicit: "subtle arrow icons, not big fat buttons") looks and
  * behaves identically in both places rather than two independently-drifting

@@ -5,13 +5,13 @@
  * `detailView.ts` (the full per-run timeline), so a Role reads identically
  * everywhere it appears.
  *
- * Found missing in review (M-090 follow-up, 2026-08-05): the first cut of
- * this redesign gave Role BADGES their own color but left the actual Step
- * BARS colored by status only (`--pi-success`/`--pi-danger`/`--pi-accent`),
- * so e.g. a `build` bar and a `review` bar both rendered the same green —
- * Role identity was invisible on the one element (the bar itself) it
- * mattered most on. Chris's own ask (point 6): "each role had an
- * in-progress color and a matching completed (success or failed) color."
+ * Role BADGES having their own color isn't enough on its own — the actual
+ * Step BARS must also carry Role identity, not just status
+ * (`--pi-success`/`--pi-danger`/`--pi-accent`), otherwise e.g. a `build`
+ * bar and a `review` bar both render the same green and Role identity is
+ * invisible on the one element (the bar itself) it matters most on.
+ * Chris's own ask: "each role had an in-progress color and a matching
+ * completed (success or failed) color."
  *
  * Design: Role identity is ALWAYS the bar's base hue, in every state —
  * - running: full-saturation Role color fill, bright text, a pulsing
@@ -40,17 +40,16 @@ export function stepBarStyle(role: string | null, status: string | null): StepBa
   // `role` can be null (a Step with no Role assigned) — fall back to the
   // page's own neutral/dim tokens rather than a generated palette in that
   // one case; every REAL role name (known or brand new) always gets a full
-  // mini-palette from `palette.ts`, never a hand-authored one (M-105 item 2).
+  // mini-palette from `palette.ts`, never a hand-authored one.
   const palette = roleMiniPalette(role);
 
   if (status === "running") {
     // `palette.solid`/`palette.onSolid` are `palette.ts`'s own high-chroma
-    // fill + matching contrasting foreground (computed per-hue, not a
-    // shared `--pi-bg` anchor) — same visual intent the pre-M-105 version
-    // achieved via `--pi-bg` (a solid role-colored fill needs a foreground
-    // that reads against THAT fill specifically, not the page background),
-    // just computed directly per-hue now instead of relying on one shared
-    // page-level anchor color.
+    // fill + matching contrasting foreground, computed per-hue rather than
+    // via one shared `--pi-bg` anchor: a solid role-colored fill needs a
+    // foreground that reads against THAT fill specifically, not the page
+    // background, so the foreground has to be derived per-hue instead of
+    // relying on one shared page-level anchor color.
     if (palette) {
       return {
         style: `background:${palette.solid}; border-color: var(--pi-accent); color: ${palette.onSolid};`,

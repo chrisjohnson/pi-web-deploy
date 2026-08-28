@@ -153,12 +153,13 @@ describe("runAgentPhase — retry-on-parse-failure loop", () => {
     expect(result.envelope.summary).toBe("did it");
   });
 
-  // Regression: jsonParses's gate check tolerates a markdown-fenced
-  // response (M-114 follow-up, gates.ts), but the final envelope build at
-  // the bottom of runAgentPhase used to re-parse the RAW response with a
-  // naive JSON.parse instead of the same extraction — passing the gate,
-  // then crashing with "Unrecognized token '`'" right after. Caught live
-  // 2026-08-13 via a real bounded-build-review smoke run.
+  // Regression guard: jsonParses's gate check tolerates a markdown-fenced
+  // response (gates.ts), so the final envelope build at the bottom of
+  // runAgentPhase must reuse that same fence-stripping extraction rather
+  // than a naive JSON.parse on the raw response — otherwise a
+  // fenced-but-valid response can pass the gate and then crash with
+  // "Unrecognized token '`'" right after. Caught live via a real
+  // bounded-build-review smoke run.
   test("a markdown-fenced first response passes the gate AND builds the envelope without crashing", async () => {
     const validEnvelope = { status: "success", summary: "fenced but valid", artifacts: [], notes_for_next_agent: "" };
     mockFetchSequence({

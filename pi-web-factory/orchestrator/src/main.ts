@@ -1,6 +1,6 @@
 /**
- * main.ts: tiny hash-router entrypoint. Routes (M-103: the detail route is
- * ticket-level now, not run-level):
+ * main.ts: tiny hash-router entrypoint. The detail route is ticket-level,
+ * not run-level. Routes:
  *   `#/`                                -> ListView (all tickets)
  *   `#/tickets/:ticketId`               -> DetailView (a ticket's attempt
  *                                          history, defaulting to latest)

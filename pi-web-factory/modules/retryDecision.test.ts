@@ -53,7 +53,7 @@ describe("assembleEvidence", () => {
     expect(() => assembleEvidence(tracer.db, "adw_running1")).toThrow(/not status='fail'/);
   });
 
-  test("throws RetryDecisionError when the run has no ticket_id (pre-M-103 row)", () => {
+  test("throws RetryDecisionError when the run has no ticket_id (a row predating the ticket system)", () => {
     tracer.sessionStart("adw_noticket1", { projectCwd: "/tmp/proj" }); // no ticketId/taskPromptForTicket -> ticket_id stays NULL
     tracer.sessionFinish("adw_noticket1", false);
     expect(() => assembleEvidence(tracer.db, "adw_noticket1")).toThrow(/no ticket_id/);
