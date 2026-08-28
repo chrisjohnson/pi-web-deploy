@@ -28,8 +28,8 @@ rather than guessing.
 
 ## Available Workflows
 
-This list is not hand-maintained here — it changes as Workflow variants ship
-(M-104). Before picking one, run, via your own bash tool:
+This list is not hand-maintained here — it changes as Workflow variants ship.
+Before picking one, run, via your own bash tool:
 
 ```
 bun $HOME/pi-web-factory/cli.ts --list-workflows
