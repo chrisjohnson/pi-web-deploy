@@ -52,7 +52,7 @@ describe("parseArgs", () => {
     expect(args.sessionId).toBe("sess_123");
   });
 
-  test("parses an optional --ticket-id (M-103)", () => {
+  test("parses an optional --ticket-id", () => {
     const args = parseArgs([
       "--project",
       "/abs/path",
@@ -109,7 +109,7 @@ describe("parseArgs", () => {
   });
 });
 
-// ── formatWorkflowList (M-104: --list-workflows) ────────────────────────────
+// ── formatWorkflowList (--list-workflows) ───────────────────────────────────
 
 describe("formatWorkflowList", () => {
   test("renders one 'name: description' line per workflow, in the given order", () => {

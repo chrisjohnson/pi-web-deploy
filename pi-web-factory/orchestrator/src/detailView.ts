@@ -1,14 +1,13 @@
 /**
- * detailView.ts: a TICKET's detail page (M-103 — this page conceptually
- * became a ticket detail page, not a bare run detail page; see this
- * module's own header comment below for the full reasoning) — a
- * Gantt-style Step timeline for whichever ATTEMPT (Workflow Run) is
- * currently shown, defaulting to the ticket's latest. Idle/paused gaps
- * between Steps are compressed to a fixed width (gantt.ts's
+ * detailView.ts: a TICKET's detail page (this page is a ticket detail
+ * page, not a bare run detail page — see the section below for the full
+ * reasoning) — a Gantt-style Step timeline for whichever ATTEMPT (Workflow
+ * Run) is currently shown, defaulting to the ticket's latest. Idle/paused
+ * gaps between Steps are compressed to a fixed width (gantt.ts's
  * `computeGanttLayout`) — only each Step's own real duration is drawn
  * proportionally.
  *
- * ── M-103: ticket-level, full detail per attempt ──────────────────────────
+ * ── ticket-level, full detail per attempt ─────────────────────────────────
  * Chris, explicit: multiple attempts at the same job should be
  * inspectable via a small pair of subtle arrow icons, and each attempt
  * shown is FULL detail, never summarized — "you're flipping through
@@ -67,9 +66,9 @@ const RUN_POLL_INTERVAL_MS = 3000;
 const EVENTS_POLL_INTERVAL_MS = 2000;
 /** A Step counts as "actively live" if an event touched it within this window — keeps the pulse honest (not stuck highlighted forever off stale data). */
 const ACTIVITY_WINDOW_MS = 15000;
-/** `.timeline-wrap`'s own CSS padding (style.css) on each side — subtracted from the container's clientWidth to get the real available width for the track itself (M-105 item 11). Kept in lockstep with style.css's `.timeline-wrap { padding: 18px; }` by hand — no DOM measurement of computed style is done here since the wrap element doesn't exist yet on the very first render. */
+/** `.timeline-wrap`'s own CSS padding (style.css) on each side — subtracted from the container's clientWidth to get the real available width for the track itself. Kept in lockstep with style.css's `.timeline-wrap { padding: 18px; }` by hand — no DOM measurement of computed style is done here since the wrap element doesn't exist yet on the very first render. */
 const TIMELINE_WRAP_PADDING_PX = 18;
-/** Conservative fallback width (M-105 item 11) used only when `this.container` genuinely reports 0 (e.g. a detached/not-yet-laid-out container, or a non-browser test environment with no real layout engine) — a run still gets a sane, fits-most-screens scale rather than gantt.ts's own div-by-near-zero MIN_PIXELS_PER_SECOND floor collapsing every bar to its minimum width. */
+/** Conservative fallback width used only when `this.container` genuinely reports 0 (e.g. a detached/not-yet-laid-out container, or a non-browser test environment with no real layout engine) — a run still gets a sane, fits-most-screens scale rather than gantt.ts's own div-by-near-zero MIN_PIXELS_PER_SECOND floor collapsing every bar to its minimum width. */
 const FALLBACK_TIMELINE_WIDTH_PX = 640;
 /** Floor for the derived track width itself (distinct from gantt.ts's own per-bar MIN_BAR_WIDTH_PX floor) — guards against a genuinely tiny/collapsed container producing a degenerate near-zero layout budget. */
 const MIN_TIMELINE_WIDTH_PX = 240;
@@ -91,30 +90,29 @@ export class DetailView {
   private events: EventRecord[] = [];
   private eventsCursor = 0;
   private lastEventAtByPhase: Map<string, number> = new Map();
-  /** M-117: which run's (`adwId`) events have already had their initial fetch kicked off — guards `updateEventsPolling` from re-fetching on every poll/render tick for a run whose events are already loaded (or loading), while still guaranteeing every shown run gets fetched at least once, regardless of status. Reset (implicitly, by pointing at a different adwId) whenever `onAttemptNavClick` clears `this.events`. */
+  /** Which run's (`adwId`) events have already had their initial fetch kicked off — guards `updateEventsPolling` from re-fetching on every poll/render tick for a run whose events are already loaded (or loading), while still guaranteeing every shown run gets fetched at least once, regardless of status. Reset (implicitly, by pointing at a different adwId) whenever `onAttemptNavClick` clears `this.events`. */
   private eventsFetchedForAdwId: string | null = null;
   /**
-   * M-105 items 3/8: which Step's detail is currently shown at the bottom of
-   * the page. Pre-M-105 this was `expandedPhaseId`, click-toggled (null =
-   * nothing shown). Now driven by HOVER (item 3 — mousing over a Step's bar
-   * switches the panel live, no click needed) and defaults to the currently
-   * ACTIVE Step on load (item 8), falling back to the last Step in sequence
-   * if nothing is active — this view never shows a blank panel once at
-   * least one Step exists, matching item 8's "as though the user had
-   * already hovered it" framing (a human opening the page mid-run should
-   * see exactly what they'd see if they'd immediately hovered the live bar).
+   * Which Step's detail is currently shown at the bottom of the page.
+   * Driven by HOVER (mousing over a Step's bar switches the panel live, no
+   * click needed) and defaults to the currently ACTIVE Step on load,
+   * falling back to the last Step in sequence if nothing is active — this
+   * view never shows a blank panel once at least one Step exists, as
+   * though the user had already hovered it (a human opening the page
+   * mid-run should see exactly what they'd see if they'd immediately
+   * hovered the live bar).
    */
   private displayedPhaseId: string | null = null;
-  /** True once `displayedPhaseId` has been explicitly set by a real hover — after that point, this view stops auto-re-picking it on every poll tick (item 8 is a LOAD-time default only; once a human has hovered something, their choice sticks until they hover elsewhere, even if a different Step becomes active). */
+  /** True once `displayedPhaseId` has been explicitly set by a real hover — after that point, this view stops auto-re-picking it on every poll tick (the load-time default only applies until a human has hovered something; after that, their choice sticks until they hover elsewhere, even if a different Step becomes active). */
   private hasHovered = false;
 
-  /** Every loaded Workflow's step title/summary metadata (M-105 items 5/6), fetched once — see api.ts's `fetchWorkflows` / server.ts's `/api/workflows` doc comments. Best-effort: a fetch failure here degrades to showing the raw step keyword instead of a friendly title, never blocks the rest of the page. */
+  /** Every loaded Workflow's step title/summary metadata, fetched once — see api.ts's `fetchWorkflows` / server.ts's `/api/workflows` doc comments. Best-effort: a fetch failure here degrades to showing the raw step keyword instead of a friendly title, never blocks the rest of the page. */
   private workflowStepsByKey: Map<string, WorkflowStepMeta> = new Map();
 
   /**
-   * M-105 item 10 (reopened — the CSS `scrollbar-gutter` fix alone wasn't
-   * enough): Chris's real complaint was text SELECTION getting destroyed a
-   * few seconds into reading/copying from the page — traced to `render()`
+   * The CSS `scrollbar-gutter` fix alone wasn't enough: Chris's real
+   * complaint was text SELECTION getting destroyed a few seconds into
+   * reading/copying from the page — traced to `render()`
    * doing an unconditional `this.container.innerHTML = ...` full teardown
    * on every poll tick, even when the freshly-fetched data was byte-for-
    * byte identical to what was already on screen (the overwhelmingly common
@@ -132,8 +130,8 @@ export class DetailView {
   private lastRenderKey: string | null = null;
 
   /**
-   * M-105 item 10 (reopened): the initial-prompt box is genuinely STATIC
-   * for a given run/attempt — a run's `request` text never changes once
+   * The initial-prompt box is genuinely STATIC for a given run/attempt —
+   * a run's `request` text never changes once
    * the run has started. Rather than re-emitting `.run-prompt-text` as part
    * of the same `innerHTML` string `render()` rewrites on every tick (which
    * would tear it down and rebuild it even under the `lastRenderKey`
@@ -162,8 +160,8 @@ export class DetailView {
   }
 
   /**
-   * M-105 items 5/6: fetches every loaded Workflow's step title/summary
-   * once and indexes it by `${adwName}::${stepName}` for O(1) lookup during
+   * Fetches every loaded Workflow's step title/summary once and indexes
+   * it by `${adwName}::${stepName}` for O(1) lookup during
    * render (`metaFor`, below). A run's `adwName` can record
    * MULTIPLE workflow names joined by `" + "` (tracer.ts's `sessionStart` —
    * an edge case for a run attached under more than one workflow name), so
@@ -262,12 +260,11 @@ export class DetailView {
       this.eventsPollHandle = null;
     }
 
-    // M-117: regardless of the run's status, the CURRENTLY SHOWN run's
-    // events must be fetched at least once — the trace db keeps a
-    // completed run's events intact (confirmed directly against the live
-    // orchestrator, see the M-117 card's decision log), so a terminal
-    // run's event history is just as real as a running one's. Bug this
-    // fixes: the old code only ever called `refreshEvents()` from inside
+    // Regardless of the run's status, the CURRENTLY SHOWN run's events
+    // must be fetched at least once — the trace db keeps a completed run's
+    // events intact (confirmed directly against the live orchestrator), so
+    // a terminal run's event history is just as real as a running one's.
+    // Bug this fixes: the old code only ever called `refreshEvents()` from inside
     // the `isRunning` branch above, so a run that was ALREADY terminal by
     // the time this view loaded it (or one paged to via attempt-nav) never
     // got its events fetched at all — the panel stayed permanently empty
@@ -314,13 +311,13 @@ export class DetailView {
     this.events = [];
     this.eventsCursor = 0;
     this.lastEventAtByPhase.clear();
-    // M-117: this attempt's events haven't been fetched yet under this
-    // fresh, cleared-out `this.events` state — clearing this lets
+    // This attempt's events haven't been fetched yet under this fresh,
+    // cleared-out `this.events` state — clearing this lets
     // `updateEventsPolling` (called below) fetch them regardless of this
     // attempt's status, same as a fresh page load would.
     this.eventsFetchedForAdwId = null;
     // Paging to a different attempt is conceptually a fresh page load for
-    // the detail panel too — re-apply item 8's "default to the active Step"
+    // the detail panel too — re-apply the "default to the active Step"
     // logic for whichever attempt is now shown, rather than carrying over a
     // hover choice that pointed at a Step from a DIFFERENT attempt (a stale
     // phaseId from attempt 2/3 has no meaning once looking at attempt 1/3).
@@ -356,8 +353,8 @@ export class DetailView {
   }
 
   /**
-   * M-105 item 8: picks which Step's detail panel shows by default, before
-   * any real hover has happened — an ACTIVE Step (per `activePhaseIds`) if
+   * Picks which Step's detail panel shows by default, before any real
+   * hover has happened — an ACTIVE Step (per `activePhaseIds`) if
    * one exists ("as though we moused over it already"), otherwise the LAST
    * Step in sequence (the most recently-relevant one for a finished run —
    * an empty/blank panel on a page that clearly has Step data is worse than
@@ -376,7 +373,7 @@ export class DetailView {
   }
 
   /**
-   * M-105 item 11: the real available width (px) for the Gantt track itself
+   * The real available width (px) for the Gantt track itself
    * — `this.container`'s own `clientWidth` (the outer view container, which
    * `.timeline-wrap` fills edge-to-edge — see `main.ts`'s mount) minus
    * `.timeline-wrap`'s own CSS padding on both sides. Read fresh on every
@@ -391,8 +388,8 @@ export class DetailView {
   }
 
   /**
-   * M-105 item 10 (reopened): a cheap, order-sensitive serialization of
-   * every field this render actually depends on for its OUTPUT — everything
+   * A cheap, order-sensitive serialization of every field this render
+   * actually depends on for its OUTPUT — everything
    * EXCEPT `Date.now()`-derived values (a running Step's live-growing bar
    * width, the ticking duration text), which are handled by the separate
    * "always re-render while genuinely live" check in `render()` itself
@@ -403,8 +400,8 @@ export class DetailView {
    * `RUN_POLL_INTERVAL_MS` even though nothing about it will ever change
    * again).
    *
-   * `timelineWidthPx()` IS included, deliberately — M-105 item 11's
-   * width-fit Gantt scale is recomputed from the container's live
+   * `timelineWidthPx()` IS included, deliberately — the width-fit Gantt
+   * scale is recomputed from the container's live
    * `clientWidth` on every render; without it in the key, a browser window
    * resize (or even just layout not having fully settled the very first
    * time this ran) would get permanently locked in at whatever width the
@@ -436,8 +433,8 @@ export class DetailView {
   }
 
   /**
-   * M-105 item 10 (reopened): builds/updates the persistent `.run-prompt`
-   * box exactly once per run identity (`adwId`) — never touched again for
+   * Builds/updates the persistent `.run-prompt` box exactly once per run
+   * identity (`adwId`) — never touched again for
    * the SAME run, even across many subsequent `render()` calls (whether
    * skipped entirely by the `renderKey` check above, or genuinely
    * re-running other sections while a run is live). Only a real run change
@@ -480,7 +477,7 @@ export class DetailView {
     const nowMs = Date.now();
     const active = this.activePhaseIds(nowMs);
 
-    // M-105 item 8: until a human has actually hovered a Step, keep the
+    // Until a human has actually hovered a Step, keep the
     // displayed panel pinned to "whichever Step is active right now" — this
     // re-evaluates on EVERY render (not just the first), so the panel
     // naturally follows a live run from Step to Step exactly as if the
@@ -497,11 +494,11 @@ export class DetailView {
       this.displayedPhaseId = this.defaultPhaseId(steps, active);
     }
 
-    // M-105 item 10 (reopened): a genuinely LIVE run (this attempt, still
-    // running) must keep re-rendering every tick regardless of the
-    // `renderKey` comparison below — its duration text and any
-    // still-running Step's bar width both advance purely off `Date.now()`,
-    // not off any field the key captures, so skipping would visibly freeze
+    // A genuinely LIVE run (this attempt, still running) must keep
+    // re-rendering every tick regardless of the `renderKey` comparison
+    // below — its duration text and any still-running Step's bar width
+    // both advance purely off `Date.now()`, not off any field the key
+    // captures, so skipping would visibly freeze
     // the clock/bar. For every OTHER case (a finished run, or an older
     // attempt being paged through) — the actual case behind Chris's
     // selection-loss complaint — an identical key means this render would
@@ -555,7 +552,7 @@ export class DetailView {
       </div>
     `;
 
-    // M-105 item 10 (reopened): the prompt box is a PERSISTENT DOM node
+    // The prompt box is a PERSISTENT DOM node
     // (built/reused by `renderPromptIfNeeded`, never re-created for the
     // same run) — swapped into the placeholder slot the innerHTML rewrite
     // above just created, rather than being part of that rewritten string
@@ -572,7 +569,7 @@ export class DetailView {
       promptSlot.remove();
     }
 
-    // M-105 item 3: hovering a Step's bar switches the detail panel below
+    // Hovering a Step's bar switches the detail panel below
     // LIVE, no click required — `mouseenter` (not `mouseover`, which would
     // re-fire on every child-element boundary crossing inside the bar; this
     // bar has no children, but `mouseenter` is the correct semantic choice
@@ -630,15 +627,15 @@ export class DetailView {
     const isActive = active.has(phaseId);
     const meta = this.metaFor(step);
 
-    // M-105 item 5: the workflow-authored human-friendly title (e.g.
-    // "Construct a Plan") replaces the OLD redundant "plan (black) / plan
-    // (purple pill)" pair this panel used to lead with — falls back to the
-    // raw step keyword when a Workflow hasn't authored a title yet (every
-    // pre-M-105 YAML, until edited) or the /api/workflows fetch failed, so
-    // this never renders blank.
+    // The workflow-authored human-friendly title (e.g. "Construct a Plan")
+    // replaces the OLD redundant "plan (black) / plan (purple pill)" pair
+    // this panel used to lead with — falls back to the raw step keyword
+    // when a Workflow hasn't authored a title yet (an older YAML, until
+    // edited) or the /api/workflows fetch failed, so this never renders
+    // blank.
     const displayTitle = meta?.title ?? step.name ?? step.phaseId;
 
-    // M-105 item 3: the panel's own background/border come from this Step's
+    // The panel's own background/border come from this Step's
     // Role mini-palette (`roleMiniPalette` — palette.ts's generated tokens),
     // not a flat page-background box — `surfaceLight` reads as "this
     // panel belongs to this role" without competing with the (still role-
@@ -648,12 +645,12 @@ export class DetailView {
       ? `background:${palette.surfaceLight}; border-color:${palette.border};`
       : "";
 
-    // M-105 item 7: `step.attempt` is a trace-db column that defaults to 0
-    // (schema.ts) — most notably for `code` steps, which never go through
-    // run.ts's agent retry loop at all and so never get a real attempt
-    // number written. Display-only 1-index fix here (the safest minimal fix
-    // per the card): whatever the stored value is, a human never sees
-    // "attempt 0" — "no retries yet" reads as attempt 1, not attempt 0.
+    // `step.attempt` is a trace-db column that defaults to 0 (schema.ts) —
+    // most notably for `code` steps, which never go through run.ts's agent
+    // retry loop at all and so never get a real attempt number written.
+    // Display-only 1-index fix here (the safest minimal fix): whatever the
+    // stored value is, a human never sees "attempt 0" — "no retries yet"
+    // reads as attempt 1, not attempt 0.
     const displayAttempt = step.attempt + 1;
 
     return `
@@ -691,7 +688,7 @@ export class DetailView {
     `;
   }
 
-  /** M-121: a completed Step's real output (branch/commit/PR), rendered inline in that Step's own detail panel. */
+  /** A completed Step's real output (branch/commit/PR), rendered inline in that Step's own detail panel. */
   private stepArtifactHtml(artifact: StepArtifact): string {
     const parts: string[] = [];
     if (artifact.branch) parts.push(`branch <code>${escapeHtml(artifact.branch)}</code>`);
@@ -701,14 +698,14 @@ export class DetailView {
   }
 
   /**
-   * M-121: on a FAILED run, a dedicated summary of every Step that DID
-   * reach success, with its captured artifact — placed right after the
-   * header, visible regardless of which Step panel a human happens to be
-   * hovering. This is the direct answer to the card's own motivating
-   * incident: a `build` Step's real pushed work must stay visible even
-   * though a LATER `review` Step's timeout failed the whole run. Renders
-   * nothing for a non-failed run, or a failed run where no Step ever
-   * reached success (nothing to show).
+   * On a FAILED run, a dedicated summary of every Step that DID reach
+   * success, with its captured artifact — placed right after the header,
+   * visible regardless of which Step panel a human happens to be
+   * hovering. This is the direct answer to a real motivating incident: a
+   * `build` Step's real pushed work must stay visible even though a LATER
+   * `review` Step's timeout failed the whole run. Renders nothing for a
+   * non-failed run, or a failed run where no Step ever reached success
+   * (nothing to show).
    */
   private failedRunArtifactsHtml(run: RunSummary): string {
     if (run.status !== "fail") return "";

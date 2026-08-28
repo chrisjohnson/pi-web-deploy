@@ -3,7 +3,7 @@
  * run cards (spec section 3), replacing the old plain vertical list.
  * Clicking a card still navigates to a detail page, unchanged in spirit.
  *
- * ── M-103: cards are TICKET-level, not run-level ──────────────────────────
+ * ── cards are TICKET-level, not run-level ──────────────────────────────────
  * Chris, explicit: multiple attempts at "conceptually the same job" should
  * merge into ONE card, showing the latest attempt by default, with a small
  * pair of subtle arrow icons to page through earlier attempts inline,
@@ -147,7 +147,7 @@ function finishedCardHtml(run: RunSummary, nowMs: number, nav: string): string {
 
 function cardOuterHtml(ticketId: string, run: RunSummary, innerHtml: string): string {
   const cls = runCardStatusClass(run.status);
-  // Links to the TICKET detail page (M-103) — not the bare run — carrying
+  // Links to the TICKET detail page — not the bare run — carrying
   // the currently-shown attempt as `?attempt=<adwId>` so clicking through
   // opens the SAME attempt the card was displaying, not silently resetting
   // to latest (found while wiring this up: without threading the attempt
@@ -201,7 +201,7 @@ function filterBarHtml(allProjects: string[], selected: string | null): string {
  * leaving the controller's own poll interval running uninterrupted (no
  * wasted extra `/api/runs/:adwId` calls from tearing down and recreating).
  *
- * ── M-103: attempt-nav lives here too ─────────────────────────────────────
+ * ── attempt-nav lives here too ────────────────────────────────────────────
  * A running card's ticket may still have earlier, terminal attempts (a
  * manual retry under the same `--ticket-id`, or a future automated one) —
  * the arrow control is wired up the same way a finished card's is (see
@@ -402,9 +402,9 @@ export class ListView {
   /** One controller per FINISHED ticket card that has had its attempt-nav interacted with (or simply exists on the current page — see refresh() for the exact lifetime rule), keyed by ticketId. */
   private finishedControllers: Map<string, TicketCardController> = new Map();
   /**
-   * M-105 item 14: same bug class/fix pattern as `detailView.ts`'s
-   * `renderKey()` (see that file's own doc comment for the original
-   * writeup) — `refresh()`'s unconditional `this.container.innerHTML = ...`
+   * Same bug class/fix pattern as `detailView.ts`'s `renderKey()` (see
+   * that file's own doc comment for the full reasoning) —
+   * `refresh()`'s unconditional `this.container.innerHTML = ...`
    * on the OUTER grid destroys hover state (and any other transient DOM
    * state) on every `POLL_INTERVAL_MS` tick, even when the freshly-polled
    * `/api/tickets` data is byte-identical to what's already rendered, since
@@ -552,7 +552,7 @@ export class ListView {
         .map((t) => t.ticketId),
     );
 
-    // M-105 item 14: skip the whole outer rebuild (and the hover-destroying
+    // Skip the whole outer rebuild (and the hover-destroying
     // innerHTML write it implies) when this tick's polled ticket-list data
     // is unchanged from what's already on screen — see `lastRefreshKey`'s
     // own doc comment above for the full mechanism/rationale. Each

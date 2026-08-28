@@ -453,7 +453,7 @@ describe("Tracer — M-074 schema additions", () => {
   });
 });
 
-describe("Tracer — M-121 stepArtifact", () => {
+describe("Tracer — stepArtifact", () => {
   test("stepArtifact sets an already-existing Step row's artifact_json, round-trips as JSON", () => {
     const adwId = "adw_artifact";
     const phaseId = "phase_artifact_build";
@@ -510,15 +510,15 @@ describe("Tracer — M-121 stepArtifact", () => {
     // Deliberately does NOT use the shared `tracer`/`dbPath` from this
     // file's own beforeEach (that db is always fresh-created via Tracer
     // itself, so it already has every column via SCHEMA's CREATE TABLE —
-    // exactly the blind spot that let the original M-121 bug ship
+    // exactly the blind spot that let the original production bug ship
     // unnoticed). This test instead hand-builds a SEPARATE db file with the
-    // OLD (pre-M-121) phases shape, closing over a real Database handle
-    // directly, THEN constructs a Tracer against that same file — the exact
-    // sequence a real process restart against the real production db goes
-    // through.
+    // OLD (pre-artifact_json) phases shape, closing over a real Database
+    // handle directly, THEN constructs a Tracer against that same file —
+    // the exact sequence a real process restart against the real
+    // production db goes through.
     const oldDbPath = join(dir, "old-shape-factory.db");
     const seed = new Database(oldDbPath, { create: true });
-    // Includes ticket_id (an M-103 column, unrelated to this test's own
+    // Includes ticket_id (a column unrelated to this test's own
     // artifact_json regression) since sessionStart's INSERT references it
     // by name — this test isolates the ONE gap under test (phases.artifact_json
     // missing from an old-shape phases table), not every column this
@@ -576,7 +576,7 @@ describe("Tracer — M-121 stepArtifact", () => {
   });
 });
 
-describe("Tracer — M-103 ticket wiring", () => {
+describe("Tracer — ticket wiring", () => {
   test("sessionStart with neither ticketId nor taskPromptForTicket leaves ticket_id NULL — no run forced into ticketing it didn't ask for", () => {
     const adwId = "adw_noticket001";
     tracer.sessionStart(adwId, { projectCwd: "/tmp/proj" });

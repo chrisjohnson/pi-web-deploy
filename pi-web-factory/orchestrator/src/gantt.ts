@@ -2,19 +2,17 @@
  * gantt.ts: lays out a Workflow Run's Steps as a horizontal timeline where
  * each Step's own duration is drawn to scale, but idle/paused gaps BETWEEN
  * Steps are compressed to a small fixed width regardless of their real
- * duration — the explicit M-077 requirement (a Step sequence that sat
- * blocked-on-human for an hour must not produce an hour-long blank stretch).
+ * duration — a Step sequence that sat blocked-on-human for an hour must
+ * not produce an hour-long blank stretch.
  *
  * This module only computes layout (x positions + widths in pixels); it has
  * no DOM/rendering code, so it's cheap to reason about / test independently.
  *
- * M-105 item 11: the px-per-second scale used to be a fixed constant (the
- * timeline would overflow past the container width for any sufficiently
- * long run, requiring `.timeline-wrap`'s horizontal scroll as an escape
- * valve). It's now DERIVED per-render from the caller-supplied
+ * The px-per-second scale is DERIVED per-render from the caller-supplied
  * `containerWidthPx` (the real available width, e.g. `.timeline-wrap`'s own
- * `clientWidth` — see `detailView.ts`'s call site) so the whole run's track
- * always fits the visible page width — no horizontal scroll ever needed.
+ * `clientWidth` — see `detailView.ts`'s call site) rather than a fixed
+ * constant, so the whole run's track always fits the visible page width —
+ * no horizontal scroll ever needed even for a sufficiently long run.
  * `MIN_BAR_WIDTH_PX` is still a floor UNDER that derived scale (a very short
  * run's steps stay comfortably readable rather than shrinking to slivers),
  * so a short/simple run may end up narrower than the full container width —
@@ -35,8 +33,9 @@ export const START_PADDING_PX = 12;
  * used to guarantee a "readable minimum" scale for long runs — that's
  * `MIN_BAR_WIDTH_PX`'s job (a true per-bar floor, applied after this scale,
  * which is allowed to compress a long run's bars arbitrarily thin before
- * that floor kicks in). A real minimum-scale floor here would defeat M-105
- * item 11's actual point: fit the container, never overflow it.
+ * that floor kicks in). A real minimum-scale floor here would defeat the
+ * actual point of deriving the scale at all: fit the container, never
+ * overflow it.
  */
 const MIN_PIXELS_PER_SECOND = 0.001;
 
@@ -56,7 +55,7 @@ export interface GanttLayout {
   steps: StepLayout[];
   /** total width of the timeline, in px — for setting the scroll container's content width */
   totalWidth: number;
-  /** the derived pixels-per-second scale actually used for this layout (M-105 item 11) — exposed so callers/tests can display or assert on it */
+  /** the derived pixels-per-second scale actually used for this layout — exposed so callers/tests can display or assert on it */
   pixelsPerSecond: number;
 }
 
@@ -98,8 +97,8 @@ function totalStepDurationMs(steps: Step[], nowMs: number): number {
  * updates naturally on each re-render as the caller re-invokes this with a
  * fresh timestamp.
  *
- * `containerWidthPx` (M-105 item 11) is the real available width the whole
- * track must fit within — the pixels-per-second scale is derived as
+ * `containerWidthPx` is the real available width the whole track must fit
+ * within — the pixels-per-second scale is derived as
  * `(containerWidthPx - fixed gap/padding budget) / totalStepDurationMs`, so
  * `totalWidth` always comes out at or under `containerWidthPx` (modulo the
  * `MIN_BAR_WIDTH_PX` floor on genuinely tiny per-step durations, which can

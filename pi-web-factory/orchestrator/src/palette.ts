@@ -1,8 +1,7 @@
 /**
- * palette.ts: deterministic Role/Step-kind -> mini-palette generator (M-105
- * Phase A/B, items 1/2).
+ * palette.ts: deterministic Role/Step-kind -> mini-palette generator.
  *
- * ── The ask (Chris, verbatim, M-105 item 2) ────────────────────────────────
+ * ── The ask (Chris, verbatim) ───────────────────────────────────────────────
  * "whatever scheme we devise should not require an AI agent to have to
  * actively come up with the next step color palette... plan is always
  * purple, but... the bank of researched matching mini-palettes should be
@@ -25,8 +24,8 @@
  * ── Where the hue ring comes from (real research, not guessed) ────────────
  * Radix Colors' own published palette-composition guidance (WorkOS/Radix UI
  * docs, "Composing a palette" + "Understanding the scale",
- * radix-ui.com/colors/docs/palette-composition/*, fetched live during this
- * ticket) is the concrete reference this module leans on:
+ * radix-ui.com/colors/docs/palette-composition/*, fetched live) is the
+ * concrete reference this module leans on:
  *   - A curated set of NAMED hue scales (not an arbitrary wheel) — "tomato,
  *     red, ruby, crimson, pink, plum, purple, violet, iris, indigo, blue,
  *     sky, cyan, teal, jade, green, grass, lime, ... amber, orange, brown" —
@@ -39,7 +38,7 @@
  *     Radix's own named scales sit on the wheel.
  *   - Radix's documented semantic pairings: "Error: red, ruby, tomato,
  *     crimson" / "Success: green, teal, jade, grass, mint" — informs this
- *     ticket's grid success/fail choice (`--pi-success`/`--pi-danger` in
+ *     app's grid success/fail choice (`--pi-success`/`--pi-danger` in
  *     style.css): a warmer, less-saturated red (closer to "ruby"/"crimson"
  *     territory, not a pure stop-sign red) paired with a jade/teal-leaning
  *     green, both pulled toward this app's existing warm sand background
@@ -57,10 +56,10 @@
  *     tuning, not reinvented from scratch.
  *
  * ── Why HSL, computed at build/render time, not more pre-baked hex pairs ──
- * `roleColor.ts` (pre-M-105) was a fixed lookup table of hand-picked hex
+ * `roleColor.ts` used to be a fixed lookup table of hand-picked hex
  * pairs per role, authored twice (once per light/dark theme) — exactly the
  * "someone has to hand-pick a new palette every time a Role is added"
- * problem item 2 calls out. `hueForName` + `minPaletteForHue` replace that
+ * problem called out above. `hueForName` + `minPaletteForHue` replace that
  * with a formula: ANY name in, a complete 5-token mini-palette out, for
  * both themes, with no per-role authoring step ever required again. The
  * curated `KNOWN_HUES` table exists ONLY to pin the roles that already have
@@ -104,8 +103,8 @@ const KNOWN_HUES: Record<string, number> = {
   // build: teal/cyan — "doing" work, cool and active, far from plan's purple
   // and from the red/green status hues below.
   build: 189,
-  // review: M-105 item 1 reopened — Chris didn't like the hand-picked
-  // amber/gold (hue 42) and asked for it to be GENERATED instead, per this
+  // review: Chris didn't like the hand-picked amber/gold (hue 42) and
+  // asked for it to be GENERATED instead, per this
   // whole module's own design goal ("let it generate a new one," rather
   // than hand-picking a replacement). Deliberately no entry here anymore —
   // `review` now falls through to `HUE_RING`'s hash-based assignment like
@@ -137,16 +136,15 @@ const KNOWN_HUES: Record<string, number> = {
  * lightness/saturation of neighboring content plus the name's own text
  * label keeps them distinguishable).
  *
- * M-105 item 1 reopened: `review` was removed from `KNOWN_HUES` (Chris
- * explicitly wanted it GENERATED, not hand-picked) — `hashString("review")
- * % HUE_RING.length` resolves to index 2, hue 95° (a yellow-green/olive).
- * Checked against every remaining curated anchor for a spacing collision:
- * nearest is `run-tests` at 152° (57° away) — plan (262°, 167° away), scout
- * (221°, 126°), document (327°, 128°), build (189°, 94°) are all further
- * still. 57° comfortably clears this ring's own ~35° collision-avoidance
- * margin, so no `HUE_RING` re-spacing was needed here — recorded per the
- * card's own instruction to flag (not silently patch around) any collision
- * this reassignment surfaced.
+ * `review` was removed from `KNOWN_HUES` (Chris explicitly wanted it
+ * GENERATED, not hand-picked) — `hashString("review") % HUE_RING.length`
+ * resolves to index 2, hue 95° (a yellow-green/olive). Checked against
+ * every remaining curated anchor for a spacing collision: nearest is
+ * `run-tests` at 152° (57° away) — plan (262°, 167° away), scout (221°,
+ * 126°), document (327°, 128°), build (189°, 94°) are all further still.
+ * 57° comfortably clears this ring's own ~35° collision-avoidance margin,
+ * so no `HUE_RING` re-spacing was needed here — flagging (not silently
+ * patching around) any collision this reassignment surfaced.
  */
 const HUE_RING = [12, 55, 95, 130, 172, 205, 243, 280, 305, 350, 25];
 

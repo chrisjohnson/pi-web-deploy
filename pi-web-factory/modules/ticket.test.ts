@@ -3,7 +3,7 @@
  * Tracer — exercises the module's own functions directly against a scratch
  * bun:sqlite db carrying just the `tickets`/`sessions` tables it needs.
  * Tracer.sessionStart's own wiring of this module is covered separately in
- * tracer.test.ts's "Tracer — M-103 ticket wiring" describe block.
+ * tracer.test.ts's "Tracer — ticket wiring" describe block.
  */
 
 import { Database } from "bun:sqlite";

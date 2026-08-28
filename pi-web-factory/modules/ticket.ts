@@ -1,5 +1,5 @@
 /**
- * ticket.ts: the `tickets` table's mint/attach logic (M-103) — the grouping
+ * ticket.ts: the `tickets` table's mint/attach logic — the grouping
  * anchor that lets multiple Workflow Run attempts at "conceptually the same
  * job" (a manual retry, or a future automated one) roll up under one card in
  * the orchestrator instead of showing as N unrelated-looking runs.
@@ -14,8 +14,8 @@
  * the DB/orchestrator.
  *
  * ── `file_path` is a pure reference field ─────────────────────────────────
- * Per the M-103 card (Chris, verbatim): "the 'fleet ticket' file itself
- * doesn't even need to be read by the fleet orchestrator or anything." This
+ * Per Chris (verbatim): "the 'fleet ticket' file itself doesn't even need
+ * to be read by the fleet orchestrator or anything." This
  * module NEVER opens/parses/watches `tickets.file_path` — it only ever WRITES
  * a caller-supplied path (or leaves it NULL) so a human can jump from a
  * ticket row to its source file. `mintOrAttachTicket` doesn't even accept a

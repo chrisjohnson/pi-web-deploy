@@ -90,7 +90,7 @@ export interface WorkflowRun {
   totalTokens: number;
   totalCost: number;
   archived: boolean;
-  /** M-103: the ticket this run is linked to — every run has exactly one, always (see ticket.ts). */
+  /** The ticket this run is linked to — every run has exactly one, always (see ticket.ts). */
   ticketId: string | null;
 }
 
@@ -220,7 +220,7 @@ export class Tracer {
   // ── sessions ────────────────────────────────────────────────────────────
 
   /**
-   * `opts.ticketId`/`opts.taskPromptForTicket` (M-103): every run belongs to
+   * `opts.ticketId`/`opts.taskPromptForTicket`: every run belongs to
    * exactly one ticket, always — mints a fresh internal ticket
    * (`ticket.ts`'s `mintOrAttachTicket`) when `ticketId` is omitted, or
    * attaches to (creating if novel) the given id when one is passed. Needs
@@ -341,11 +341,11 @@ export class Tracer {
    * `role` is the new TS-facing name for what the SQL column still calls
    * `owner`; it's written into that column here, at this one boundary.
    *
-   * `inputTokens`/`outputTokens`/`cachedTokens`/`outputSummary` are the
-   * M-074 additions — all optional. `artifactJson` is the M-121 addition
-   * (a completed Step's real output — branch/commit/PR — see schema.ts's
-   * module header). All optional. When omitted on an UPDATE (the
-   * conflict-branch), the existing column value is preserved via
+   * `inputTokens`/`outputTokens`/`cachedTokens`/`outputSummary` and
+   * `artifactJson` (a completed Step's real output — branch/commit/PR —
+   * see schema.ts's module header) are all optional additions. When
+   * omitted on an UPDATE (the conflict-branch), the existing column value
+   * is preserved via
    * `COALESCE(excluded.x, phases.x)` rather than being clobbered back to
    * NULL, since `phase_start` and `phase_end` both upsert the same row and
    * only `phase_end` (via run.ts) has the data to set them.
@@ -406,7 +406,7 @@ export class Tracer {
   }
 
   /**
-   * M-121: sets an ALREADY-EXISTING Step row's `artifact_json` directly, by
+   * Sets an ALREADY-EXISTING Step row's `artifact_json` directly, by
    * `phaseId` — a targeted single-column write, not a full `phaseUpsert`
    * (which needs the row's other required fields in hand; this call site,
    * `workflow.ts`'s `runAgentStep`, only has the artifact at hand at the
