@@ -21,8 +21,14 @@ services:
     user: "1000:1000"
     tty: true
     stdin_open: true
+    # 127.0.0.1-scoped, not 0.0.0.0 (TLS ingress plan, including
+    # local-ai-machine repo) - closes direct LAN access regardless of that
+    # repo's firewall allowedTCPPorts list (bridge-published Docker ports
+    # bypass that list entirely). pi-web-session-watcher (network_mode:
+    # host, same repo) and caddy (also host-mode, the including repo)
+    # both still reach this fine via 127.0.0.1:8080.
     ports:
-      - "8080:3000" # Expose the Next.js UI port
+      - "127.0.0.1:8080:3000" # Expose the Next.js UI port
       # perf-server.js (the plugin's Prometheus-query backend proxy) runs
       # as its own dedicated containerized service
       # (pi-web-perf-metrics-proxy, stays in local-ai-machine — reads FROM
@@ -114,8 +120,12 @@ services:
     restart: unless-stopped
     labels:
       com.local-ai-machine.always-up: "true"
+    # 127.0.0.1-scoped, not 0.0.0.0 (TLS ingress plan, including
+    # local-ai-machine repo) - same reasoning as jmfederico-pi-web's own
+    # port above. Caddy (network_mode: host, the including repo) still
+    # reaches it fine via 127.0.0.1:8090.
     ports:
-      - "8090:8090"
+      - "127.0.0.1:8090:8090"
     volumes:
       - ${PI_WEB_HOME_DIR}:/home/piweb/.pi-web
     environment:
